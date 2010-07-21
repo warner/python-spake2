@@ -50,7 +50,7 @@ def update_version_py():
         print "unable to run git, leaving pake2/_version.py alone"
         return
     # we use tags like "python-pake2-0.5", so strip the prefix
-    assert stdout.startswith("python-pake2-")
+    assert stdout.startswith("python-pake2-"), stdout
     ver = stdout[len("python-pake2-"):].strip()
     f = open("pake2/_version.py", "w")
     f.write(VERSION_PY % ver)
