@@ -1,11 +1,12 @@
 
-import os, binascii
+import os, binascii, re
 from hashlib import sha256
 
 
 class PAKEError(Exception):
     pass
-
+class BadUVString(Exception):
+    """The U and V strings must be simple ASCII for serializability"""
 
 def orderlen(order):
     return (1+len("%x"%order))/2 # bytes
@@ -48,23 +49,34 @@ def inverse_mod( a, m ):
   else: return ud + m
 
 class Params:
-    def __init__(self, p, q, g, u=None, v=None):
+    def __init__(self, p, q, g, u="public_U", v="public_V"):
         # these are the public system parameters
         self.p = p
         self.q = q
         self.g = g
         self.orderlen = orderlen(self.p)
-        # u and v are defined as "randomly chosen elements of the group". I
-        # think this means they are arbitrary, so any well-known group
-        # elements should suffice.
-        if u is None:
-            u = pow(g, 10, p)
-        if v is None:
-            v = pow(g, 11, p)
-        self.u = u
-        self.inv_u = inverse_mod(u, self.p)
-        self.v = v
-        self.inv_v = inverse_mod(v, self.p)
+
+        # u and v are defined as "randomly chosen elements of the group". It
+        # is important that nobody knows their discrete log (if your
+        # parameter-provider picked a secret 'haha' and told you to use
+        # u=pow(g,haha,p), you couldn't tell that u wasn't randomly chosen,
+        # but they could then mount an active attack against your PAKE
+        # session).
+        #
+        # The safe way to choose these is to hash a public string. We require
+        # a limited character set so we can serialize it later.
+
+        if not re.search(r'^[0-9a-zA-Z_+-. ]*$', u):
+            raise BadUVString()
+        if not re.search(r'^[0-9a-zA-Z_+-. ]*$', v):
+            raise BadUVString()
+
+        self.u_str = u
+        self.v_str = v
+        self.u = string_to_number(sha256(str(u)).digest()) % self.p
+        self.v = string_to_number(sha256(str(v)).digest()) % self.p
+        self.inv_u = inverse_mod(self.u, self.p)
+        self.inv_v = inverse_mod(self.v, self.p)
 
 # params_80 is roughly as secure as an 80-bit symmetric key, and uses a
 # 1024-bit modulus. params_112 uses a 2048-bit modulus, and params_128 uses a
@@ -279,8 +291,8 @@ class PAKE2:
                 "params.g": "%x" % self.params.g,
                 "params.q": "%x" % self.params.q,
 
-                "params.u": "%x" % self.params.u,
-                "params.v": "%x" % self.params.v,
+                "params.u_str": self.params.u_str,
+                "params.v_str": self.params.v_str,
 
                 "s": self.s,
                 "ab": self.getattr_hex("ab"),
@@ -292,8 +304,8 @@ class PAKE2:
         p = Params(p=int(data["params.p"], 16),
                    q=int(data["params.q"], 16),
                    g=int(data["params.g"], 16),
-                   u=int(data["params.u"], 16),
-                   v=int(data["params.v"], 16))
+                   u=data["params.u_str"],
+                   v=data["params.v_str"])
         self = klass(data["s"], data["side"], params=p, entropy=entropy)
         for name in ["ab", "xy"]:
             if data[name]:
