@@ -119,6 +119,11 @@ class Packed(unittest.TestCase):
         self.failUnlessEqual(hexlify(kA), hexlify(kB))
         self.failUnlessEqual(len(kA), len(sha256().digest()))
 
+class Errors(unittest.TestCase):
+    def test_bad_side(self):
+        self.failUnlessRaises(PAKEError,
+                              PAKE2, "password", "R", params_80)
+
 if __name__ == '__main__':
     unittest.main()
 
