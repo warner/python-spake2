@@ -1,6 +1,7 @@
 
 import timeit, sys
-from pake2 import PAKE2, PAKE2_P, PAKE2_Q, params_80, params_112, params_128
+from pake2 import PAKE2_P, PAKE2_Q, params_80, params_112, params_128
+hush_pyflakes = [params_80, params_112, params_128]
 
 class Harness:
     def setup(self, params=params_80):
