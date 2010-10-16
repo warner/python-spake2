@@ -42,15 +42,16 @@ faster.
 
 == History ==
 
-The PAKE2 protocol comes from Professor Dan Boneh. The chapter that defines
-PAKE2 also defines PAKE2+, which changes one side (typically a server) to
-record a derivative of the password instead of the actual password. In
-PAKE2+, a server compromise does not immediately give access to the
-passwords: instead, the attacker must perform an offline dictionary attack
-against the stolen data before they can learn the passwords.
+The PAKE2 protocol comes from Dan Boneh and Victor Shoup, published in
+http://cryptobook.net . The chapter that defines PAKE2 also defines PAKE2+,
+which changes one side (typically a server) to record a derivative of the
+password instead of the actual password. In PAKE2+, a server compromise does
+not immediately give access to the passwords: instead, the attacker must
+perform an offline dictionary attack against the stolen data before they can
+learn the passwords.
 
 Brian Warner wrote this Python version in July 2010, based upon the algorithm
-from Boneh's book.
+from their book.
 
 == Testing ==
 
