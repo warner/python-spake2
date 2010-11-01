@@ -2,6 +2,10 @@
 import os, binascii, re
 from hashlib import sha256
 
+# TODO: include idP and idQ as strings
+# TODO: include X and Y in the hash
+# TODO: switch to ECC
+
 
 class PAKEError(Exception):
     pass
