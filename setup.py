@@ -37,6 +37,21 @@ class Test(Command):
         return rc
 cmdclass["test"] = Test
 
+class Speed(Command):
+    description = "run speed benchmarks"
+    user_options = []
+    boolean_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        p = subprocess.Popen([sys.executable, "spake2/bench_spake2.py"])
+        rc = p.wait()
+        if rc != 0:
+            sys.exit(rc)
+cmdclass["speed"] = Speed
+
 setup(name="spake2",
       version=versioneer.get_version(),
       description="SPAKE2 password-authenticated key exchange (pure python)",
