@@ -4,7 +4,7 @@ from pake2 import PAKE2, PAKE2_P, PAKE2_Q, PAKEError, \
      params_80, params_112, params_128
 from binascii import hexlify
 from hashlib import sha256
-import simplejson
+import json
 
 class Basic(unittest.TestCase):
     def test_success(self):
@@ -29,7 +29,7 @@ class Parameters(unittest.TestCase):
         pw = "password"
         pA,pB = PAKE2_P(pw, params=params), PAKE2_Q(pw, params=params)
         m1A,m1B = pA.one(), pB.one()
-        #print len(simplejson.dumps(m1A))
+        #print len(json.dumps(m1A))
         kA,kB = pA.two(m1B), pB.two(m1A)
         self.failUnlessEqual(hexlify(kA), hexlify(kB))
         self.failUnlessEqual(len(kA), len(sha256().digest()))
@@ -94,9 +94,9 @@ class OtherEntropy(unittest.TestCase):
 
 class Serialize(unittest.TestCase):
     def replace(self, orig):
-        data = simplejson.dumps(orig.to_json())
+        data = json.dumps(orig.to_json())
         #print len(data)
-        return PAKE2.from_json(simplejson.loads(data))
+        return PAKE2.from_json(json.loads(data))
 
     def test_serialize(self):
         pw = "password"
@@ -114,7 +114,7 @@ class Packed(unittest.TestCase):
         pA,pB = PAKE2_P(pw), PAKE2_Q(pw)
         m1A,m1B = pA.one(), pB.one()
         m1Ap = pA.pack_msg(m1A)
-        #print "m1:", len(simplejson.dumps(m1A)), len(m1Ap)
+        #print "m1:", len(json.dumps(m1A)), len(m1Ap)
         kA,kB = pA.two(m1B), pB.two(pB.unpack_msg(m1Ap))
         self.failUnlessEqual(hexlify(kA), hexlify(kB))
         self.failUnlessEqual(len(kA), len(sha256().digest()))
