@@ -43,12 +43,12 @@ faster.
 == History ==
 
 The PAKE2 protocol comes from Dan Boneh and Victor Shoup, published in
-http://cryptobook.net . The chapter that defines PAKE2 also defines PAKE2+,
-which changes one side (typically a server) to record a derivative of the
-password instead of the actual password. In PAKE2+, a server compromise does
-not immediately give access to the passwords: instead, the attacker must
-perform an offline dictionary attack against the stolen data before they can
-learn the passwords.
+http://crypto.stanford.edu/~dabo/cryptobook/ . The chapter that defines PAKE2
+also defines PAKE2+, which changes one side (typically a server) to record a
+derivative of the password instead of the actual password. In PAKE2+, a
+server compromise does not immediately give access to the passwords: instead,
+the attacker must perform an offline dictionary attack against the stolen
+data before they can learn the passwords.
 
 Brian Warner wrote this Python version in July 2010, based upon the algorithm
 from their book.
@@ -105,11 +105,11 @@ example, the client-side might do:
 while the server-side might do:
 
   from pake2 import PAKE2_Q
-  p = PAKE2_Q("our password")
-  msg_out = p.one()
+  q = PAKE2_Q("our password")
+  msg_out = q.one()
   send(msg_out)
   msg_in = receive()
-  key = p.two(msg_in)
+  key = q.two(msg_in)
 
 If both sides used the same password, and there is no man-in-the-middle, then
 both sides will obtain the same key. If not, the two sides will get different
@@ -129,7 +129,7 @@ success or failure of the protocol before the other.
 
   # and Bob does this:
   ...
-  key = p.two(msg_in)
+  key = q.two(msg_in)
   their_hhkey = receive()
   my_hhkey = sha256(sha256(key).digest()).digest()
   assery my_hhkey == their_hhkey
