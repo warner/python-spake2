@@ -5,10 +5,6 @@ _hush_pyflakes = [SPAKE2, SPAKE2_P, SPAKE2_Q, PAKEError,
                   params_80, params_112, params_128]
 del _hush_pyflakes
 
-try:
-    from _version import __version__ as v
-    __version__ = v
-    del v
-except ImportError:
-    __version__ = "UNKNOWN"
-
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

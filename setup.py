@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess, re
+import sys, subprocess
 from distutils.core import setup, Command
-from distutils.command.sdist import sdist as _sdist
+import versioneer
+versioneer.VCS = "git"
+versioneer.versionfile_source = "spake2/_version.py"
+versioneer.versionfile_build = versioneer.versionfile_source
+versioneer.tag_prefix = "v"
+versioneer.parentdir_prefix = "python-spake2-"
+
+cmdclass = {}
+cmdclass.update(versioneer.get_cmdclass())
 
 class Test(Command):
     description = "run unit tests"
@@ -27,75 +35,15 @@ class Test(Command):
             print >>sys.stderr, "Test (%s) FAILED" % which
         print "== finished %s" % which
         return rc
-
-VERSION_PY = """
-# This file is originally generated from Git information by running 'setup.py
-# version'. Distribution tarballs contain a pre-generated copy of this file.
-
-__version__ = '%s'
-"""
-
-def update_version_py():
-    if not os.path.isdir(".git"):
-        print "This does not appear to be a Git repository."
-        return
-    try:
-        p = subprocess.Popen(["git", "describe", "--tags", "--dirty", "--always"],
-                             stdout=subprocess.PIPE)
-    except EnvironmentError:
-        print "unable to run git, leaving spake2/_version.py alone"
-        return
-    stdout = p.communicate()[0]
-    if p.returncode != 0:
-        print "unable to run git, leaving spake2/_version.py alone"
-        return
-    # we use tags like "python-spake2-0.5", so strip the prefix
-    assert stdout.startswith("python-spake2-"), stdout
-    ver = stdout[len("python-spake2-"):].strip()
-    f = open("spake2/_version.py", "w")
-    f.write(VERSION_PY % ver)
-    f.close()
-    print "set spake2/_version.py to '%s'" % ver
-
-def get_version():
-    try:
-        f = open("spake2/_version.py")
-    except EnvironmentError:
-        return None
-    for line in f.readlines():
-        mo = re.match("__version__ = '([^']+)'", line)
-        if mo:
-            ver = mo.group(1)
-            return ver
-    return None
-
-class Version(Command):
-    description = "update _version.py from Git repo"
-    user_options = []
-    boolean_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-        pass
-    def run(self):
-        update_version_py()
-        print "Version is now", get_version()
-
-class sdist(_sdist):
-    def run(self):
-        update_version_py()
-        # unless we update this, the sdist command will keep using the old
-        # version
-        self.distribution.metadata.version = get_version()
-        return _sdist.run(self)
+cmdclass["test"] = Test
 
 setup(name="spake2",
-      version=get_version(),
+      version=versioneer.get_version(),
       description="SPAKE2 password-authenticated key exchange (pure python)",
       author="Brian Warner",
       author_email="warner-pyspake2@lothar.com",
       url="http://github.com/warner/python-spake2",
       packages=["spake2"],
       license="MIT",
-      cmdclass={ "test": Test, "version": Version, "sdist": sdist },
+      cmdclass=cmdclass,
       )

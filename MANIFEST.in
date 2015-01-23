@@ -1,0 +1,2 @@
+include versioneer.py
+include spake2/_version.py
