@@ -1,5 +1,5 @@
 
-= Pure-Python PAKE2 =
+# Pure-Python PAKE2
 
 This is an easy-to-use implementation of the PAKE2 password-authenticated key
 exchange algorithm, implemented purely in Python, released under the MIT
@@ -22,12 +22,12 @@ All messages are JSON-serializable. For the default security level (using a
 is about 265 bytes long. An alternative binary encoding is available, which
 reduces the message sizes by about 50%.
 
-== Dependencies ==
+## Dependencies
 
 This package is pure-python: no C code or compiled extension modules are
 used. It requires the 'simplejson' module for data serialization.
 
-== Speed ==
+## Speed
 
 To run the built-in speed tests, just run the bench_pake2.py script.
 
@@ -40,7 +40,7 @@ This library uses only Python. A version which used C speedups for the large
 modular multiplication operations would probably be an order of magnitude
 faster.
 
-== History ==
+## History
 
 The PAKE2 protocol comes from Dan Boneh and Victor Shoup, described in their
 ["cryptobook"] [1]. This is a form of "SPAKE2", defined by Abdalla and
@@ -56,7 +56,7 @@ passwords.
 Brian Warner wrote this Python version in July 2010, based upon the algorithm
 from their book.
 
-== Testing ==
+## Testing
 
 To run the built-in test suite from a source directory, do:
 
@@ -64,14 +64,14 @@ To run the built-in test suite from a source directory, do:
 
 The tests take approximately 3 seconds on my laptop.
 
-== Security ==
+## Security
 
 This library does not protect against timing attacks. Do not allow attackers
 to measure how long it takes you to create or respond to a message. This
 library depends upon a strong source of random numbers. Do not use it on a
 system where os.urandom() is weak.
 
-== Usage ==
+## Usage
 
 Alice and Bob both initialize their PAKE2 instances with the same (weak)
 password. They will exchange messages to (hopefully) derive a shared secret
@@ -83,36 +83,34 @@ However, there are two roles in the PAKE2 protocol, "P" and "Q". The two
 sides must agree ahead of time which one will play which role (the messages
 they generate depend upon which side they play). For environments in which
 one piece of code always plays the same role, there are two separate classes
-PAKE2_P and PAKE2_Q to make this easier to set up.
+`PAKE2_P` and `PAKE2_Q` to make this easier to set up.
 
 Each instance of a PAKE2 protocol uses a set of shared parameters. These
 include a group, a generator, and a pair of arbitrary group elements. The
 python-pake2 implementation comes with several pre-generated parameter sets,
 with various security levels.
 
-You start by creating a PAKE2 instance, using the password and the side
-indicator ("P" or "Q"). You can override an option to increase the security
-level (at the expense of processing speed). Then you ask the instance for the
-outbound message by calling msg_out=p.one(), and send it to your partner.
-Once you receive the corresponding inbound message, you pass it into the
-instance and extract the (shared) key bytestring with key=p.two(msg_in). For
-example, the client-side might do:
+You start by creating a PAKE2 instance, using the password and the side indicator ("P" or "Q"). You can override an option to increase the security level (at the expense of processing speed). Then you ask the instance for the outbound message by calling `msg_out=p.one()`, and send it to your partner. Once you receive the corresponding inbound message, you pass it into the instance and extract the (shared) key bytestring with `key=p.two(msg_in)`. For example, the client-side might do:
 
-  from pake2 import PAKE2_P
-  p = PAKE2_P("our password")
-  msg_out = p.one()
-  send(msg_out)
-  msg_in = receive()
-  key = p.two(msg_in)
+```python
+from pake2 import PAKE2_P
+p = PAKE2_P("our password")
+msg_out = p.one()
+send(msg_out)
+msg_in = receive()
+key = p.two(msg_in)
+```
 
 while the server-side might do:
 
-  from pake2 import PAKE2_Q
-  q = PAKE2_Q("our password")
-  msg_out = q.one()
-  send(msg_out)
-  msg_in = receive()
-  key = q.two(msg_in)
+```python
+from pake2 import PAKE2_Q
+q = PAKE2_Q("our password")
+msg_out = q.one()
+send(msg_out)
+msg_in = receive()
+key = q.two(msg_in)
+```
 
 If both sides used the same password, and there is no man-in-the-middle, then
 both sides will obtain the same key. If not, the two sides will get different
@@ -124,31 +122,33 @@ allow a MitM to learn the key that they could otherwise not guess). This
 key-confirmation step is asymmetric: one side will always learn about the
 success or failure of the protocol before the other.
 
-  # Alice does this:
-  ...
-  key = p.two(msg_in)
-  hhkey = sha256(sha256(key).digest()).digest()
-  send(hhkey)
+```python
+# Alice does this:
+...
+key = p.two(msg_in)
+hhkey = sha256(sha256(key).digest()).digest()
+send(hhkey)
 
-  # and Bob does this:
-  ...
-  key = q.two(msg_in)
-  their_hhkey = receive()
-  my_hhkey = sha256(sha256(key).digest()).digest()
-  assery my_hhkey == their_hhkey
-  hkey = sha256(key).digest()
-  send(hkey)
+# and Bob does this:
+...
+key = q.two(msg_in)
+their_hhkey = receive()
+my_hhkey = sha256(sha256(key).digest()).digest()
+assery my_hhkey == their_hhkey
+hkey = sha256(key).digest()
+send(hkey)
 
-  # and then Alice does this:
-  their_hkey = receive()
-  my_hkey = sha256(key).digest()
-  assert my_hkey == their_hkey
+# and then Alice does this:
+their_hkey = receive()
+my_hkey = sha256(key).digest()
+assert my_hkey == their_hkey
+```
 
 The shared "key" can be used as an AES data-encryption key, and/or an HMAC
 key to provide data integrity. It can also be used to derive other session
 keys as necessary.
 
---footnotes--
+#### footnotes
 
 [1]: http://crypto.stanford.edu/~dabo/cryptobook/  "cryptobook"
 [2]: http://www.di.ens.fr/~pointche/Documents/Papers/2005_rsa.pdf "RSA 2005"
