@@ -2,7 +2,7 @@
 = Pure-Python PAKE2 =
 
 This is an easy-to-use implementation of the PAKE2 password-authenticated key
-exchange algorithm[1], implemented purely in Python, released under the MIT
+exchange algorithm, implemented purely in Python, released under the MIT
 license. This allows two parties, who share a weak password, to safely derive
 a strong shared secret (and therefore build an encrypted+authenticated
 channel). A passive attacker who eavesdrops on the connection learns no
@@ -42,13 +42,16 @@ faster.
 
 == History ==
 
-The PAKE2 protocol comes from Dan Boneh and Victor Shoup, published in
-http://crypto.stanford.edu/~dabo/cryptobook/ . The chapter that defines PAKE2
-also defines PAKE2+, which changes one side (typically a server) to record a
-derivative of the password instead of the actual password. In PAKE2+, a
-server compromise does not immediately give access to the passwords: instead,
-the attacker must perform an offline dictionary attack against the stolen
-data before they can learn the passwords.
+The PAKE2 protocol comes from Dan Boneh and Victor Shoup, described in their
+["cryptobook"] [1]. This is a form of "SPAKE2", defined by Abdalla and
+Pointcheval at [RSA 2005] [2]. Additional recommendations for groups and
+distinguished elements were published in [Ladd's IETF draft] [3]. The
+Boneh/Shoup chapter that defines PAKE2 also defines PAKE2+, which changes one
+side (typically a server) to record a derivative of the password instead of
+the actual password. In PAKE2+, a server compromise does not immediately give
+access to the passwords: instead, the attacker must perform an offline
+dictionary attack against the stolen data before they can learn the
+passwords.
 
 Brian Warner wrote this Python version in July 2010, based upon the algorithm
 from their book.
@@ -146,3 +149,7 @@ key to provide data integrity. It can also be used to derive other session
 keys as necessary.
 
 --footnotes--
+
+[1]: http://crypto.stanford.edu/~dabo/cryptobook/  "cryptobook"
+[2]: http://www.di.ens.fr/~pointche/Documents/Papers/2005_rsa.pdf "RSA 2005"
+[3]: https://tools.ietf.org/html/draft-ladd-spake2-01 "Ladd's IETF draft"
