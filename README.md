@@ -1,8 +1,8 @@
 
-# Pure-Python PAKE2
+# Pure-Python SPAKE2
 
-This is an easy-to-use implementation of the PAKE2 password-authenticated key
-exchange algorithm, implemented purely in Python, released under the MIT
+This is an easy-to-use implementation of the SPAKE2 password-authenticated
+key exchange algorithm, implemented purely in Python, released under the MIT
 license. This allows two parties, who share a weak password, to safely derive
 a strong shared secret (and therefore build an encrypted+authenticated
 channel). A passive attacker who eavesdrops on the connection learns no
@@ -29,9 +29,9 @@ used. It requires the 'simplejson' module for data serialization.
 
 ## Speed
 
-To run the built-in speed tests, just run the bench_pake2.py script.
+To run the built-in speed tests, just run the bench_spake2.py script.
 
-PAKE2 consists of two phases, separated by a single message exchange. On my
+SPAKE2 consists of two phases, separated by a single message exchange. On my
 2008 mac laptop, the default `params_80` security level takes about 20ms to
 complete both phases. The `params_112` level takes about 185ms, and
 `params_128` takes about 422ms. The two phases take roughly equal time.
@@ -42,8 +42,8 @@ faster.
 
 ## History
 
-The PAKE2 protocol comes from Dan Boneh and Victor Shoup, described in their
-["cryptobook"] [1]. This is a form of "SPAKE2", defined by Abdalla and
+The protocol comes from Dan Boneh and Victor Shoup, described as "PAKE2" in
+their ["cryptobook"] [1]. This is a form of "SPAKE2", defined by Abdalla and
 Pointcheval at [RSA 2005] [2]. Additional recommendations for groups and
 distinguished elements were published in [Ladd's IETF draft] [3].
 
@@ -62,7 +62,7 @@ from their book.
 
 To run the built-in test suite from a source directory, do:
 
- PYTHONPATH=. python spake2/test/test_spake2.py
+   PYTHONPATH=. python spake2/test/test_spake2.py
 
 The tests take approximately 3 seconds on my laptop.
 
