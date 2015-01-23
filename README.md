@@ -32,9 +32,9 @@ used. It requires the 'simplejson' module for data serialization.
 To run the built-in speed tests, just run the bench_pake2.py script.
 
 PAKE2 consists of two phases, separated by a single message exchange. On my
-2008 mac laptop, the default params_80 security level takes about 20ms to
-complete both phases. The params_112 level takes about 185ms, and params_128
-takes about 422ms. The two phases take roughly equal time.
+2008 mac laptop, the default `params_80` security level takes about 20ms to
+complete both phases. The `params_112` level takes about 185ms, and
+`params_128` takes about 422ms. The two phases take roughly equal time.
 
 This library uses only Python. A version which used C speedups for the large
 modular multiplication operations would probably be an order of magnitude
@@ -45,13 +45,15 @@ faster.
 The PAKE2 protocol comes from Dan Boneh and Victor Shoup, described in their
 ["cryptobook"] [1]. This is a form of "SPAKE2", defined by Abdalla and
 Pointcheval at [RSA 2005] [2]. Additional recommendations for groups and
-distinguished elements were published in [Ladd's IETF draft] [3]. The
-Boneh/Shoup chapter that defines PAKE2 also defines PAKE2+, which changes one
-side (typically a server) to record a derivative of the password instead of
-the actual password. In PAKE2+, a server compromise does not immediately give
-access to the passwords: instead, the attacker must perform an offline
-dictionary attack against the stolen data before they can learn the
-passwords.
+distinguished elements were published in [Ladd's IETF draft] [3].
+
+The Boneh/Shoup chapter that defines PAKE2 also defines an augmented variant
+named "PAKE2+", which changes one side (typically a server) to record a
+derivative of the password instead of the actual password. In PAKE2+, a
+server compromise does not immediately give access to the passwords: instead,
+the attacker must perform an offline dictionary attack against the stolen
+data before they can learn the passwords. PAKE2+ support is planned, but not
+yet implemented.
 
 Brian Warner wrote this Python version in July 2010, based upon the algorithm
 from their book.
@@ -60,7 +62,7 @@ from their book.
 
 To run the built-in test suite from a source directory, do:
 
- PYTHONPATH=. python pake2/test/test_pake2.py
+ PYTHONPATH=. python spake2/test/test_spake2.py
 
 The tests take approximately 3 seconds on my laptop.
 
@@ -73,28 +75,34 @@ system where os.urandom() is weak.
 
 ## Usage
 
-Alice and Bob both initialize their PAKE2 instances with the same (weak)
+Alice and Bob both initialize their SPAKE2 instances with the same (weak)
 password. They will exchange messages to (hopefully) derive a shared secret
 key "K". The protocol is symmetric: for each operation that Alice does, Bob
 will do the same. For each message that Alice sends, Bob will send a
 corresponding message.
 
-However, there are two roles in the PAKE2 protocol, "P" and "Q". The two
+However, there are two roles in the SPAKE2 protocol, "P" and "Q". The two
 sides must agree ahead of time which one will play which role (the messages
 they generate depend upon which side they play). For environments in which
 one piece of code always plays the same role, there are two separate classes
-`PAKE2_P` and `PAKE2_Q` to make this easier to set up.
+`SPAKE2_P` and `SPAKE2_Q` to make this easier to set up.
 
-Each instance of a PAKE2 protocol uses a set of shared parameters. These
+Each instance of a SPAKE2 protocol uses a set of shared parameters. These
 include a group, a generator, and a pair of arbitrary group elements. The
-python-pake2 implementation comes with several pre-generated parameter sets,
+python-spake2 implementation comes with several pre-generated parameter sets,
 with various security levels.
 
-You start by creating a PAKE2 instance, using the password and the side indicator ("P" or "Q"). You can override an option to increase the security level (at the expense of processing speed). Then you ask the instance for the outbound message by calling `msg_out=p.one()`, and send it to your partner. Once you receive the corresponding inbound message, you pass it into the instance and extract the (shared) key bytestring with `key=p.two(msg_in)`. For example, the client-side might do:
+You start by creating a SPAKE2 instance, using the password and the side
+indicator ("P" or "Q"). You can override an option to increase the security
+level (at the expense of processing speed). Then you ask the instance for the
+outbound message by calling `msg_out=p.one()`, and send it to your partner.
+Once you receive the corresponding inbound message, you pass it into the
+instance and extract the (shared) key bytestring with `key=p.two(msg_in)`.
+For example, the client-side might do:
 
 ```python
-from pake2 import PAKE2_P
-p = PAKE2_P("our password")
+from spake2 import SPAKE2_P
+p = SPAKE2_P("our password")
 msg_out = p.one()
 send(msg_out)
 msg_in = receive()
@@ -104,8 +112,8 @@ key = p.two(msg_in)
 while the server-side might do:
 
 ```python
-from pake2 import PAKE2_Q
-q = PAKE2_Q("our password")
+from spake2 import SPAKE2_Q
+q = SPAKE2_Q("our password")
 msg_out = q.one()
 send(msg_out)
 msg_in = receive()
