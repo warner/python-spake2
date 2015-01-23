@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys, subprocess
 from distutils.core import setup, Command
 import versioneer
@@ -28,12 +29,12 @@ class Test(Command):
                 sys.exit(rc)
 
     def do_test(self, which):
-        print "======= running %s" % which
+        print("======= running %s" % which)
         p = subprocess.Popen([sys.executable, which])
         rc = p.wait()
         if rc != 0:
-            print >>sys.stderr, "Test (%s) FAILED" % which
-        print "== finished %s" % which
+            print("Test (%s) FAILED" % which, file=sys.stderr)
+        print("== finished %s" % which)
         return rc
 cmdclass["test"] = Test
 

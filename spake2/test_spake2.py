@@ -8,7 +8,7 @@ import json
 
 class Basic(unittest.TestCase):
     def test_success(self):
-        pw = "password"
+        pw = b"password"
         pA,pB = SPAKE2_P(pw), SPAKE2_Q(pw)
         m1A,m1B = pA.one(), pB.one()
         kA,kB = pA.two(m1B), pB.two(m1A)
@@ -16,8 +16,8 @@ class Basic(unittest.TestCase):
         self.failUnlessEqual(len(kA), len(sha256().digest()))
 
     def test_failure(self):
-        pw = "password"
-        pA,pB = SPAKE2_P(pw), SPAKE2_Q("passwerd")
+        pw = b"password"
+        pA,pB = SPAKE2_P(pw), SPAKE2_Q(b"passwerd")
         m1A,m1B = pA.one(), pB.one()
         kA,kB = pA.two(m1B), pB.two(m1A)
         self.failIfEqual(hexlify(kA), hexlify(kB))
@@ -26,7 +26,7 @@ class Basic(unittest.TestCase):
 
 class Parameters(unittest.TestCase):
     def do_tests(self, params):
-        pw = "password"
+        pw = b"password"
         pA,pB = SPAKE2_P(pw, params=params), SPAKE2_Q(pw, params=params)
         m1A,m1B = pA.one(), pB.one()
         #print len(json.dumps(m1A))
@@ -34,7 +34,7 @@ class Parameters(unittest.TestCase):
         self.failUnlessEqual(hexlify(kA), hexlify(kB))
         self.failUnlessEqual(len(kA), len(sha256().digest()))
 
-        pA,pB = SPAKE2_P(pw, params=params), SPAKE2_Q("passwerd", params=params)
+        pA,pB = SPAKE2_P(pw, params=params), SPAKE2_Q(b"passwerd", params=params)
         m1A,m1B = pA.one(), pB.one()
         kA,kB = pA.two(m1B), pB.two(m1A)
         self.failIfEqual(hexlify(kA), hexlify(kB))
@@ -46,7 +46,7 @@ class Parameters(unittest.TestCase):
             self.do_tests(params)
 
     def test_default_is_80(self):
-        pw = "password"
+        pw = b"password"
         pA,pB = SPAKE2_P(pw, params=params_80), SPAKE2_Q(pw)
         m1A,m1B = pA.one(), pB.one()
         kA,kB = pA.two(m1B), pB.two(m1A)
@@ -73,7 +73,7 @@ class PRNG:
 class OtherEntropy(unittest.TestCase):
     def test_entropy(self):
         entropy = PRNG("seed")
-        pw = "password"
+        pw = b"password"
         pA,pB = SPAKE2_P(pw, entropy=entropy), SPAKE2_Q(pw, entropy=entropy)
         m1A1,m1B1 = pA.one(), pB.one()
         kA1,kB1 = pA.two(m1B1), pB.two(m1A1)
@@ -99,7 +99,7 @@ class Serialize(unittest.TestCase):
         return SPAKE2.from_json(json.loads(data))
 
     def test_serialize(self):
-        pw = "password"
+        pw = b"password"
         pA,pB = SPAKE2_P(pw), SPAKE2_Q(pw)
         pA = self.replace(pA)
         m1A,m1B = pA.one(), pB.one()
@@ -110,7 +110,7 @@ class Serialize(unittest.TestCase):
 
 class Packed(unittest.TestCase):
     def test_pack(self):
-        pw = "password"
+        pw = b"password"
         pA,pB = SPAKE2_P(pw), SPAKE2_Q(pw)
         m1A,m1B = pA.one(), pB.one()
         m1Ap = pA.pack_msg(m1A)
@@ -122,7 +122,7 @@ class Packed(unittest.TestCase):
 class Errors(unittest.TestCase):
     def test_bad_side(self):
         self.failUnlessRaises(PAKEError,
-                              SPAKE2, "password", "R", params_80)
+                              SPAKE2, b"password", "R", params_80)
 
 if __name__ == '__main__':
     unittest.main()

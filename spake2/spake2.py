@@ -13,7 +13,7 @@ class BadUVString(Exception):
     """The U and V strings must be simple ASCII for serializability"""
 
 def orderlen(order):
-    return (1+len("%x"%order))/2 # bytes
+    return (1+len("%x"%order))//2 # bytes
 
 def number_to_string(num, orderlen):
     if orderlen is None:
@@ -77,8 +77,8 @@ class Params:
 
         self.u_str = u
         self.v_str = v
-        self.u = string_to_number(sha256(str(u)).digest()) % self.p
-        self.v = string_to_number(sha256(str(v)).digest()) % self.p
+        self.u = string_to_number(sha256(u.encode("ascii")).digest()) % self.p
+        self.v = string_to_number(sha256(v.encode("ascii")).digest()) % self.p
         self.inv_u = inverse_mod(self.u, self.p)
         self.inv_v = inverse_mod(self.v, self.p)
 
@@ -126,11 +126,11 @@ def randrange(order, entropy):
     # forth between strings and integers a lot.
 
     assert order > 1
-    bytes = orderlen(order)
+    num_bytes = orderlen(order)
     dont_try_forever = 10000 # gives about 2**-60 failures for worst case
     while dont_try_forever > 0:
         dont_try_forever -= 1
-        candidate = string_to_number(entropy(bytes))
+        candidate = string_to_number(entropy(num_bytes))
         if candidate < order:
             return candidate
         continue
@@ -219,12 +219,12 @@ class SPAKE2:
         self.side = side
         self.params = params
         q = params.q
-        if isinstance(password, (int,long)):
+        if isinstance(password, int):
             assert password > 0
             assert password < q-1
             self.s = password
         else:
-            assert isinstance(password, str)
+            assert isinstance(password, bytes)
             # we must convert the password (a variable-length string) into a
             # number from 1 to q-1 (inclusive).
             self.s = 1 + (string_to_number(sha256(password).digest()) % (q-1))
