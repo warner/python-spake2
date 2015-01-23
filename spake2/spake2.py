@@ -138,14 +138,14 @@ def randrange(order, entropy):
                        " is very wrong or you got realllly unlucky. Order was"
                        " %x" % order)
 
-class PAKE2:
-    """This class manages one half of a PAKE2 key negotiation.
+class SPAKE2:
+    """This class manages one half of a SPAKE2 key negotiation.
 
     The protocol has four public system parameters: a group, a generator, and
     two group elements (one each for sides P and Q). The participants must
     agree ahead of time which role each will play (either P or Q).
 
-    Create an instance with PAKE2(password=pw, side='P') (or side='Q'), where
+    Create an instance with SPAKE2(password=pw, side='P') (or side='Q'), where
     'password' is either a number (0 < number < params.q-1) or a bytestring.
     You can also pass an optional params= value (one of [params_80,
     params_112, params_128], for increasing levels of security and CPU
@@ -178,9 +178,9 @@ class PAKE2:
         A: hkey = receive()
         A: assert sha256(Akey).digest() == hkey
 
-    If you can't keep the PAKE2 instance alive for the whole negotiation, you
+    If you can't keep the SPAKE2 instance alive for the whole negotiation, you
     can persist the important data from an instance with data=p.to_json(),
-    and then reconstruct the instance with p=PAKE2.from_json(data). The
+    and then reconstruct the instance with p=SPAKE2.from_json(data). The
     instance data is sensitive: protect it better than you would the original
     password. An attacker who learns the instance state from both sides will
     be able to reconstruct the shared key. These functions return a
@@ -189,17 +189,17 @@ class PAKE2:
     the serialized JSON is typically about 1236 bytes after construction and
     1528 bytes after one().
 
-     p = PAKE2(password)
+     p = SPAKE2(password)
      send(p.one())
      open('save.json','w').write(simplejson.dumps(p.to_json()))
      ...
-     p = PAKE2.from_json(simplejson.loads(open('save.json').read()))
+     p = SPAKE2.from_json(simplejson.loads(open('save.json').read()))
      key = p.two(receive())
 
     The message returned by one() is a small dictionary, safe to serialize as
     a JSON object, and will survive being deserialized in a javascript
     environment (i.e. the large numbers are encoded as hex strings, since JS
-    does not have bigints). If you wish for smaller messages, the PAKE2
+    does not have bigints). If you wish for smaller messages, the SPAKE2
     instance has pack_msg() and unpack_msg() methods to encode/decode these
     strings into smaller bytestrings. The encoding scheme is slightly
     different for each params= value. For params_80, a JSON encoding of
@@ -316,13 +316,13 @@ class PAKE2:
                 setattr(self, name, int(data[name], 16))
         return self
 
-class PAKE2_P(PAKE2):
+class SPAKE2_P(SPAKE2):
     def __init__(self, password, params=params_80, entropy=None):
-        PAKE2.__init__(self, password, "P", params, entropy)
+        SPAKE2.__init__(self, password, "P", params, entropy)
 
-class PAKE2_Q(PAKE2):
+class SPAKE2_Q(SPAKE2):
     def __init__(self, password, params=params_80, entropy=None):
-        PAKE2.__init__(self, password, "Q", params, entropy)
+        SPAKE2.__init__(self, password, "Q", params, entropy)
 
 
 # add ECC version for smaller messages/storage

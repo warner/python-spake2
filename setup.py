@@ -13,7 +13,7 @@ class Test(Command):
     def finalize_options(self):
         pass
     def run(self):
-        for t in ["pake2/test_pake2.py",
+        for t in ["spake2/test_spake2.py",
                   ]:
             rc = self.do_test(t)
             if rc != 0:
@@ -43,23 +43,23 @@ def update_version_py():
         p = subprocess.Popen(["git", "describe", "--tags", "--dirty", "--always"],
                              stdout=subprocess.PIPE)
     except EnvironmentError:
-        print "unable to run git, leaving pake2/_version.py alone"
+        print "unable to run git, leaving spake2/_version.py alone"
         return
     stdout = p.communicate()[0]
     if p.returncode != 0:
-        print "unable to run git, leaving pake2/_version.py alone"
+        print "unable to run git, leaving spake2/_version.py alone"
         return
-    # we use tags like "python-pake2-0.5", so strip the prefix
-    assert stdout.startswith("python-pake2-"), stdout
-    ver = stdout[len("python-pake2-"):].strip()
-    f = open("pake2/_version.py", "w")
+    # we use tags like "python-spake2-0.5", so strip the prefix
+    assert stdout.startswith("python-spake2-"), stdout
+    ver = stdout[len("python-spake2-"):].strip()
+    f = open("spake2/_version.py", "w")
     f.write(VERSION_PY % ver)
     f.close()
-    print "set pake2/_version.py to '%s'" % ver
+    print "set spake2/_version.py to '%s'" % ver
 
 def get_version():
     try:
-        f = open("pake2/_version.py")
+        f = open("spake2/_version.py")
     except EnvironmentError:
         return None
     for line in f.readlines():
@@ -89,13 +89,13 @@ class sdist(_sdist):
         self.distribution.metadata.version = get_version()
         return _sdist.run(self)
 
-setup(name="pake2",
+setup(name="spake2",
       version=get_version(),
-      description="PAKE2/PAKE2+ password-authenticated key exchange (pure python)",
+      description="SPAKE2 password-authenticated key exchange (pure python)",
       author="Brian Warner",
-      author_email="warner-pypake2@lothar.com",
-      url="http://github.com/warner/python-pake2",
-      packages=["pake2"],
+      author_email="warner-pyspake2@lothar.com",
+      url="http://github.com/warner/python-spake2",
+      packages=["spake2"],
       license="MIT",
       cmdclass={ "test": Test, "version": Version, "sdist": sdist },
       )
