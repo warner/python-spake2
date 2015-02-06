@@ -30,7 +30,7 @@ used. It requires the 'simplejson' module for data serialization.
 
 ## Speed
 
-To run the built-in speed tests, just run the bench_spake2.py script.
+To run the built-in speed tests, just run `python setup.py speed`.
 
 SPAKE2 consists of two phases, separated by a single message exchange. On my
 2012 Mac Mini (2.6GHz Core-i7), the default `Params1024` security level takes
@@ -63,7 +63,7 @@ from their book.
 
 To run the built-in test suite from a source directory, do:
 
-   PYTHONPATH=. python spake2/test/test_spake2.py
+   python setup.py test
 
 The tests take approximately half a second on my computer.
 
