@@ -171,7 +171,7 @@ class SPAKE2:
             raise OnlyCallFinishOnce("finish() can only be called once")
         self._finished = True
 
-        other_side = inbound_side_and_message[0]
+        other_side = inbound_side_and_message[0:1]
         inbound_message = inbound_side_and_message[1:]
         if self.side == SideA:
             if other_side != SideB:
@@ -214,17 +214,17 @@ class SPAKE2:
             raise SerializedTooEarly("call .start() before .serialize()")
         group = self.params.group
         d = {"hashed_params": self.hash_params(),
-             "side": self.side,
-             "idA": hexlify(self.idA),
-             "idB": hexlify(self.idB),
-             "password": hexlify(self.pw),
-             "xy_exp": hexlify(group.scalar_to_bytes(self.xy_exp)),
+             "side": self.side.decode("ascii"),
+             "idA": hexlify(self.idA).decode("ascii"),
+             "idB": hexlify(self.idB).decode("ascii"),
+             "password": hexlify(self.pw).decode("ascii"),
+             "xy_exp": hexlify(group.scalar_to_bytes(self.xy_exp)).decode("ascii"),
              }
         return json.dumps(d).encode("ascii")
 
     @classmethod
     def from_serialized(klass, data, params=Params1024):
-        d = json.loads(data)
+        d = json.loads(data.decode("ascii"))
         side = d["side"].encode("ascii")
         assert side in (SideA, SideB)
         def _should_be_unused(count): raise NotImplementedError

@@ -1,5 +1,6 @@
 from __future__ import division
 import os, binascii, math
+from . import six
 
 def size_bits(maxval):
     if hasattr(maxval, "bit_length"): # python-2.7 or 3.x
@@ -39,7 +40,7 @@ def generate_mask(maxval):
 
 def random_list_of_ints(count, entropy_f=os.urandom):
     # return a list of ints, each 0<=x<=255, for masking
-    return [ord(b) for b in entropy_f(count)]
+    return list(six.iterbytes(entropy_f(count)))
 def mask_list_of_ints(top_byte_mask_int, list_of_ints):
     return [top_byte_mask_int & list_of_ints[0]] + list_of_ints[1:]
 def list_of_ints_to_number(l):

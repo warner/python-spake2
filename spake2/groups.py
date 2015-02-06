@@ -1,4 +1,6 @@
+from __future__ import division
 import hashlib
+from .six import integer_types
 from .util import (size_bits, size_bytes, unbiased_randrange,
                    bytes_to_number, number_to_bytes)
 
@@ -8,7 +10,7 @@ class _GroupElement:
         self._x = x
 
     def __mul__(self, other):
-        if not isinstance(other, (int, long)):
+        if not isinstance(other, integer_types):
             raise TypeError("GroupElement*N requires N be a scalar")
         return self._group.scalarmult(self, other)
 
@@ -77,8 +79,8 @@ class IntegerGroup:
         # is selected uniformly at random, so will e, and nobody will
         # know its discrete log. We can enforce this for pre-selected
         # parameters by choosing h as the output of a hash function.
-        r = (self.p - 1) / self.q
-        assert int(r) == r
+        r = (self.p - 1) // self.q
+        assert r * self.q == self.p - 1
         h = bytes_to_number(processed_seed) % self.p
         element = self.element_class(self, pow(h, r, self.p))
         assert self.is_member(element)
@@ -92,7 +94,7 @@ class IntegerGroup:
     def scalar_to_bytes(self, i):
         # both for hashing into transcript, and save/restore of
         # intermediate state
-        assert isinstance(i, (int, long))
+        assert isinstance(i, integer_types)
         assert 0 <= 0 < self.q
         return number_to_bytes(i, self.q)
 
@@ -125,7 +127,7 @@ class IntegerGroup:
     def scalarmult(self, e1, i):
         assert isinstance(e1, _GroupElement)
         assert e1._group is self
-        assert isinstance(i, (int, long))
+        assert isinstance(i, integer_types)
         return self.element_class(self, pow(e1._x, i % self.q, self.p))
 
     def scalarmult_base(self, i):
@@ -140,7 +142,7 @@ class IntegerGroup:
         return self.element_class(self, (e1._x * e2._x) % self.p)
 
     def invert_scalar(self, i):
-        assert isinstance(i, (int, long))
+        assert isinstance(i, integer_types)
         return (-i) % self.q
 
     def password_to_scalar(self, pw):
@@ -156,20 +158,20 @@ def sha256(b):
 def sha512(b):
     return hashlib.sha512(b).digest()
 def hash1024(b):
-    return "".join([hashlib.sha512(b"0:"+b).digest(),
-                    hashlib.sha512(b"1:"+b).digest()])
+    return b"".join([hashlib.sha512(b"0:"+b).digest(),
+                     hashlib.sha512(b"1:"+b).digest()])
 def hash2048(b):
-    return "".join([hashlib.sha512(b"0:"+b).digest(),
-                    hashlib.sha512(b"1:"+b).digest(),
-                    hashlib.sha512(b"2:"+b).digest(),
-                    hashlib.sha512(b"3:"+b).digest()])
+    return b"".join([hashlib.sha512(b"0:"+b).digest(),
+                     hashlib.sha512(b"1:"+b).digest(),
+                     hashlib.sha512(b"2:"+b).digest(),
+                     hashlib.sha512(b"3:"+b).digest()])
 def hash3072(b):
-    return "".join([hashlib.sha512(b"0:"+b).digest(),
-                    hashlib.sha512(b"1:"+b).digest(),
-                    hashlib.sha512(b"2:"+b).digest(),
-                    hashlib.sha512(b"3:"+b).digest(),
-                    hashlib.sha512(b"4:"+b).digest(),
-                    hashlib.sha512(b"5:"+b).digest()])
+    return b"".join([hashlib.sha512(b"0:"+b).digest(),
+                     hashlib.sha512(b"1:"+b).digest(),
+                     hashlib.sha512(b"2:"+b).digest(),
+                     hashlib.sha512(b"3:"+b).digest(),
+                     hashlib.sha512(b"4:"+b).digest(),
+                     hashlib.sha512(b"5:"+b).digest()])
 
 
 I1024 = IntegerGroup(
