@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import sys, subprocess
+import sys, subprocess, timeit
 from distutils.core import setup, Command
 import versioneer
 versioneer.VCS = "git"
@@ -26,19 +26,47 @@ class Test(Command):
         test_spake2.unittest.main(module=test_spake2, argv=["dummy"])
 cmdclass["test"] = Test
 
-class Speed(Command):
+class Speed(Test):
     description = "run speed benchmarks"
-    user_options = []
-    boolean_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-        pass
     def run(self):
-        p = subprocess.Popen([sys.executable, "spake2/bench_spake2.py"])
-        rc = p.wait()
-        if rc != 0:
-            sys.exit(rc)
+        def do(setup_statements, statement):
+            # extracted from timeit.py
+            t = timeit.Timer(stmt=statement,
+                             setup="\n".join(setup_statements))
+            # determine number so that 0.2 <= total time < 2.0
+            for i in range(1, 10):
+                number = 10**i
+                x = t.timeit(number)
+                if x >= 0.2:
+                    break
+            return x / number
+
+        def abbrev(t):
+            if t > 1.0:
+                return "%.3fs" % t
+            if t > 1e-3:
+                return "%.1fms" % (t*1e3)
+            return "%.1fus" % (t*1e6)
+
+        for params in ["Params1024", "Params2048", "Params3072"]:
+            S1 = "from spake2 import SPAKE2, SPAKE2_A, SPAKE2_B, %s" % params
+            S2 = "sB = SPAKE2_B(b'password', params=%s)" % params
+            S3 = "mB = sB.start()"
+            S4 = "sA = SPAKE2_A(b'password', params=%s)" % params
+            S5 = "mA = sA.start()"
+            S8 = "key = sA.finish(mB)"
+
+            full = do([S1, S2, S3], ";".join([S4, S5, S8]))
+            start = do([S1], ";".join([S4, S5]))
+            # how large is the generated message?
+            from spake2 import params as all_params
+            from spake2 import SPAKE2_A
+            p = getattr(all_params, params)
+            s = SPAKE2_A(b"pw", params=p)
+            msglen = len(s.start())
+            statelen = len(s.serialize())
+            print("%10s: msglen=%3d, statelen=%3d, full=%s, start=%s"
+                  % (params, msglen, statelen, abbrev(full), abbrev(start)))
 cmdclass["speed"] = Speed
 
 setup(name="spake2",
