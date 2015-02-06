@@ -158,20 +158,14 @@ def sha256(b):
 def sha512(b):
     return hashlib.sha512(b).digest()
 def hash1024(b):
-    return b"".join([hashlib.sha512(b"0:"+b).digest(),
-                     hashlib.sha512(b"1:"+b).digest()])
+    return b"".join([sha512(b"0:"+b), sha512(b"1:"+b)])
 def hash2048(b):
-    return b"".join([hashlib.sha512(b"0:"+b).digest(),
-                     hashlib.sha512(b"1:"+b).digest(),
-                     hashlib.sha512(b"2:"+b).digest(),
-                     hashlib.sha512(b"3:"+b).digest()])
+    return b"".join([sha512(b"0:"+b), sha512(b"1:"+b),
+                     sha512(b"2:"+b), sha512(b"3:"+b)])
 def hash3072(b):
-    return b"".join([hashlib.sha512(b"0:"+b).digest(),
-                     hashlib.sha512(b"1:"+b).digest(),
-                     hashlib.sha512(b"2:"+b).digest(),
-                     hashlib.sha512(b"3:"+b).digest(),
-                     hashlib.sha512(b"4:"+b).digest(),
-                     hashlib.sha512(b"5:"+b).digest()])
+    return b"".join([sha512(b"0:"+b), sha512(b"1:"+b),
+                     sha512(b"2:"+b), sha512(b"3:"+b),
+                     sha512(b"4:"+b), sha512(b"5:"+b)])
 
 
 I1024 = IntegerGroup(

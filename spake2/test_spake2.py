@@ -1,8 +1,7 @@
 
 import unittest
-from .spake2 import (SPAKE2, SPAKE2_A, SPAKE2_B,
-                     SerializedTooEarly, BadSide)
-from . import util, groups, params, six
+from . import spake2, util, groups, params, six
+from .spake2 import SPAKE2, SPAKE2_A, SPAKE2_B
 from binascii import hexlify
 from hashlib import sha256
 from itertools import count
@@ -158,6 +157,13 @@ class Group(unittest.TestCase):
         self.assertElementsEqual(e4 * g.q, e_zero)
         self.assertElementsEqual(e5 * g.q, e_zero)
 
+    def test_bad_math(self):
+        g = groups.I1024
+        zero = g.identity
+        self.assertRaises(TypeError, lambda: zero * zero)
+        self.assertRaises(TypeError, lambda: zero + 1)
+        self.assertRaises(TypeError, lambda: zero - 1)
+
     def test_is_member(self):
         g = groups.I1024
         fr = PRG(0)
@@ -299,7 +305,7 @@ class Serialize(unittest.TestCase):
     def test_serialize(self):
         pw = b"password"
         sA,sB = SPAKE2_A(pw), SPAKE2_B(pw)
-        self.assertRaises(SerializedTooEarly, self.replace, sA)
+        self.assertRaises(spake2.SerializedTooEarly, self.replace, sA)
         m1A,m1B = sA.start(), sB.start()
         sA = self.replace(sA)
         kA,kB = sA.finish(m1B), sB.finish(m1A)
@@ -308,7 +314,42 @@ class Serialize(unittest.TestCase):
 
 class Errors(unittest.TestCase):
     def test_bad_side(self):
-        self.assertRaises(BadSide, SPAKE2, b"password", "R")
+        self.assertRaises(spake2.BadSide, SPAKE2, b"password", "R")
+
+    def test_start_twice(self):
+        s = SPAKE2_A(b"password")
+        s.start()
+        self.assertRaises(spake2.OnlyCallStartOnce, s.start)
+
+    def test_finish_twice(self):
+        pw = b"password"
+        sA,sB = SPAKE2_A(pw), SPAKE2_B(pw)
+        sA.start()
+        msg = sB.start()
+        sA.finish(msg)
+        self.assertRaises(spake2.OnlyCallFinishOnce, sA.finish, msg)
+
+    def test_wrong_side(self):
+        pw = b"password"
+        sA1,sA2 = SPAKE2_A(pw), SPAKE2_A(pw)
+        sA1.start()
+        msg = sA2.start()
+        self.assertRaises(spake2.OffSides, sA1.finish, msg)
+
+        sB1,sB2 = SPAKE2_B(pw), SPAKE2_B(pw)
+        sB1.start()
+        msg = sB2.start()
+        self.assertRaises(spake2.OffSides, sB1.finish, msg)
+
+    def test_unserialize_wrong_group(self):
+        s = SPAKE2_A(b"password", params=params.Params2048)
+        s.start()
+        data = s.serialize()
+        s2 = SPAKE2.from_serialized(data, params=params.Params2048) # this is ok
+        self.assertRaises(spake2.WrongGroupError,
+                          SPAKE2.from_serialized, data) # default is P1024
+        self.assertRaises(spake2.WrongGroupError,
+                          SPAKE2.from_serialized, data, params=params.Params3072)
 
 if __name__ == '__main__':
     unittest.main()
