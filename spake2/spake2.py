@@ -228,8 +228,9 @@ class SPAKE2:
         side = d["side"].encode("ascii")
         assert side in (SideA, SideB)
         def _should_be_unused(count): raise NotImplementedError
-        self = klass(unhexlify(d["password"]), side,
-                     idA=unhexlify(d["idA"]), idB=unhexlify(d["idB"]),
+        self = klass(unhexlify(d["password"].encode("ascii")), side,
+                     idA=unhexlify(d["idA"].encode("ascii")),
+                     idB=unhexlify(d["idB"].encode("ascii")),
                      params=params, entropy_f=_should_be_unused)
         if d["hashed_params"] != self.hash_params():
             err = ("SPAKE2.from_serialized() must be called with the same"
@@ -238,7 +239,7 @@ class SPAKE2:
             raise WrongGroupError(err)
         group = self.params.group
         self._started = True
-        self.xy_exp = group.scalar_from_bytes(unhexlify(d["xy_exp"]),
+        self.xy_exp = group.scalar_from_bytes(unhexlify(d["xy_exp"].encode("ascii")),
                                               allow_wrap=False)
         self.xy_elem = group.scalarmult_base(self.xy_exp)
         self.compute_outbound_message()

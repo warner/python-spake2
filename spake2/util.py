@@ -17,7 +17,7 @@ def number_to_bytes(num, maxval):
     num_bytes = size_bytes(maxval)
     fmt_str = "%0" + str(2*num_bytes) + "x"
     s_hex = fmt_str % num
-    s = binascii.unhexlify(s_hex)
+    s = binascii.unhexlify(s_hex.encode("ascii"))
     assert len(s) == num_bytes
     assert isinstance(s, type(b""))
     return s
