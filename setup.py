@@ -22,20 +22,8 @@ class Test(Command):
     def finalize_options(self):
         pass
     def run(self):
-        for t in ["spake2/test_spake2.py",
-                  ]:
-            rc = self.do_test(t)
-            if rc != 0:
-                sys.exit(rc)
-
-    def do_test(self, which):
-        print("======= running %s" % which)
-        p = subprocess.Popen([sys.executable, which])
-        rc = p.wait()
-        if rc != 0:
-            print("Test (%s) FAILED" % which, file=sys.stderr)
-        print("== finished %s" % which)
-        return rc
+        from spake2 import test_spake2
+        test_spake2.unittest.main(module=test_spake2, argv=["dummy"])
 cmdclass["test"] = Test
 
 class Speed(Command):
