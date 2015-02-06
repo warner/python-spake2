@@ -8,7 +8,10 @@ python:
   - "pypy3"
 install:
   - echo "no dependencies to install"
+  - pip install python-coveralls
 script:
   - python setup.py build
-  - python setup.py test
+  - coverage run setup.py test
   - python setup.py speed
+after_success:
+  - coveralls

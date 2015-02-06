@@ -2,6 +2,7 @@
 # Pure-Python SPAKE2
 
 [![Build Status](https://travis-ci.org/warner/python-spake2.png?branch=master)](https://travis-ci.org/warner/python-spake2)
+[![Coverage Status](https://coveralls.io/repos/warner/python-spake2/badge.svg)](https://coveralls.io/r/warner/python-spake2)
 
 This is an easy-to-use implementation of the SPAKE2 password-authenticated
 key exchange algorithm, implemented purely in Python, released under the MIT
