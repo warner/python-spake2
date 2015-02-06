@@ -87,8 +87,10 @@ class IntegerGroup:
         return element
 
     def is_member(self, e):
-        if not e._group is self: return False
-        if pow(e._x, self.q, self.p) == 1: return True
+        if not e._group is self:
+            return False
+        if pow(e._x, self.q, self.p) == 1:
+            return True
         return False
 
     def scalar_to_bytes(self, i):

@@ -171,6 +171,13 @@ class Group(unittest.TestCase):
         self.assertTrue(g.is_member(g.scalarmult_base(2)))
         self.assertTrue(g.is_member(g.scalarmult_base(3)))
         self.assertTrue(g.is_member(g.random_element(fr)[1]))
+        g2 = groups.I2048
+        self.assertFalse(g.is_member(g2.identity))
+        # we must bypass the normal API to create an element that's marked as
+        # being of the right group, but the actual number is not in the
+        # subgroup
+        self.assertFalse(g.is_member(groups._GroupElement(g, 0)))
+        self.assertFalse(g.is_member(groups._GroupElement(g, 2)))
 
     def test_arbitrary_element(self):
         g = groups.I1024
@@ -345,7 +352,7 @@ class Errors(unittest.TestCase):
         s = SPAKE2_A(b"password", params=params.Params2048)
         s.start()
         data = s.serialize()
-        s2 = SPAKE2.from_serialized(data, params=params.Params2048) # this is ok
+        SPAKE2.from_serialized(data, params=params.Params2048) # this is ok
         self.assertRaises(spake2.WrongGroupError,
                           SPAKE2.from_serialized, data) # default is P1024
         self.assertRaises(spake2.WrongGroupError,
