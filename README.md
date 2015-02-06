@@ -19,10 +19,9 @@ The protocol requires the exchange of one pair of messages, so only one round
 trip is necessary to establish the session key. If key-confirmation is
 necessary, that will require a second round trip.
 
-All messages are JSON-serializable. For the default security level (using a
+All messages are bytestrings. For the default security level (using a
 1024-bit modulus, roughly equivalent to an 80-bit symmetric key), the message
-is about 265 bytes long. An alternative binary encoding is available, which
-reduces the message sizes by about 50%.
+is 129 bytes long.
 
 ## Dependencies
 
@@ -34,9 +33,9 @@ used. It requires the 'simplejson' module for data serialization.
 To run the built-in speed tests, just run the bench_spake2.py script.
 
 SPAKE2 consists of two phases, separated by a single message exchange. On my
-2008 mac laptop, the default `params_80` security level takes about 20ms to
-complete both phases. The `params_112` level takes about 185ms, and
-`params_128` takes about 422ms. The two phases take roughly equal time.
+2012 Mac Mini (2.6GHz Core-i7), the default `Params1024` security level takes
+about 3.3ms to complete both phases. The `Params2048` level takes about 16ms,
+and `Params3072` takes about 32ms. The two phases take roughly equal time.
 
 This library uses only Python. A version which used C speedups for the large
 modular multiplication operations would probably be an order of magnitude
@@ -66,7 +65,7 @@ To run the built-in test suite from a source directory, do:
 
    PYTHONPATH=. python spake2/test/test_spake2.py
 
-The tests take approximately 3 seconds on my laptop.
+The tests take approximately half a second on my computer.
 
 ## Security
 
@@ -83,11 +82,11 @@ key "K". The protocol is symmetric: for each operation that Alice does, Bob
 will do the same. For each message that Alice sends, Bob will send a
 corresponding message.
 
-However, there are two roles in the SPAKE2 protocol, "P" and "Q". The two
+However, there are two roles in the SPAKE2 protocol, "A" and "B". The two
 sides must agree ahead of time which one will play which role (the messages
 they generate depend upon which side they play). For environments in which
 one piece of code always plays the same role, there are two separate classes
-`SPAKE2_P` and `SPAKE2_Q` to make this easier to set up.
+`SPAKE2_A` and `SPAKE2_B` to make this easier to set up.
 
 Each instance of a SPAKE2 protocol uses a set of shared parameters. These
 include a group, a generator, and a pair of arbitrary group elements. The
@@ -95,31 +94,31 @@ python-spake2 implementation comes with several pre-generated parameter sets,
 with various security levels.
 
 You start by creating a SPAKE2 instance, using the password and the side
-indicator ("P" or "Q"). You can override an option to increase the security
-level (at the expense of processing speed). Then you ask the instance for the
-outbound message by calling `msg_out=p.one()`, and send it to your partner.
-Once you receive the corresponding inbound message, you pass it into the
-instance and extract the (shared) key bytestring with `key=p.two(msg_in)`.
-For example, the client-side might do:
+indicator (`spake2.SideA` or `spake2.SideB`). You can override an option to
+increase the security level (at the expense of processing speed). Then you
+ask the instance for the outbound message by calling `msg_out=s.start()`, and
+send it to your partner. Once you receive the corresponding inbound message,
+you pass it into the instance and extract the (shared) key bytestring with
+`key=s.finish(msg_in)`. For example, the client-side might do:
 
 ```python
-from spake2 import SPAKE2_P
-p = SPAKE2_P("our password")
-msg_out = p.one()
+from spake2 import SPAKE2_A
+s = SPAKE2_A(b"our password")
+msg_out = s.start()
 send(msg_out)
 msg_in = receive()
-key = p.two(msg_in)
+key = s.finish(msg_in)
 ```
 
 while the server-side might do:
 
 ```python
-from spake2 import SPAKE2_Q
-q = SPAKE2_Q("our password")
-msg_out = q.one()
+from spake2 import SPAKE2_B
+q = SPAKE2_B(b"our password")
+msg_out = q.start()
 send(msg_out)
 msg_in = receive()
-key = q.two(msg_in)
+key = q.finish(msg_in)
 ```
 
 If both sides used the same password, and there is no man-in-the-middle, then
@@ -135,13 +134,13 @@ success or failure of the protocol before the other.
 ```python
 # Alice does this:
 ...
-key = p.two(msg_in)
+key = s.finish(msg_in)
 hhkey = sha256(sha256(key).digest()).digest()
 send(hhkey)
 
 # and Bob does this:
 ...
-key = q.two(msg_in)
+key = q.finish(msg_in)
 their_hhkey = receive()
 my_hhkey = sha256(sha256(key).digest()).digest()
 assery my_hhkey == their_hhkey
