@@ -1,5 +1,5 @@
 from __future__ import division
-import os, binascii, math, itertools
+import os, binascii, math
 from . import six
 
 def size_bits(maxval):
@@ -80,6 +80,6 @@ def xor_keys(kA, kB):
     assert isinstance(kA, bytes)
     assert isinstance(kB, bytes)
     assert len(kA) == len(kB)
-    return b"".join(itertools.imap(lambda a,b: six.int2byte(a^b),
-                                   six.iterbytes(kA),
-                                   six.iterbytes(kB)))
+    return b"".join(map(lambda a,b: six.int2byte(a^b),
+                        six.iterbytes(kA),
+                        six.iterbytes(kB)))

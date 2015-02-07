@@ -198,8 +198,8 @@ class SPAKE2_Symmetric:
     def finish(self, inbound_side_and_message):
         l = len(inbound_side_and_message)
         assert l % 2 == 0
-        inbound_A = inbound_side_and_message[:l/2]
-        inbound_B = inbound_side_and_message[l/2:]
+        inbound_A = inbound_side_and_message[:l//2]
+        inbound_B = inbound_side_and_message[l//2:]
         assert len(inbound_A) == len(inbound_B)
         keyA = self.sA.finish(inbound_B)
         keyB = self.sB.finish(inbound_A)
