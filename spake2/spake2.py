@@ -8,8 +8,6 @@ from .params import Params, Params1024
 
 class PAKEError(Exception):
     pass
-class BadSide(PAKEError):
-    pass
 class OnlyCallStartOnce(PAKEError):
     """start() may only be called once. Re-using a SPAKE2 instance is likely
     to reveal the password or the derived key."""
@@ -21,6 +19,8 @@ class OffSides(PAKEError):
     expecting the opposite side."""
 class SerializedTooEarly(PAKEError):
     pass
+class WrongSideSerialized(PAKEError):
+    """You tried to unserialize data stored for the other side."""
 class WrongGroupError(PAKEError):
     pass
 
@@ -41,32 +41,21 @@ SideB = b"B"
 # to serialize intermediate state, just remember x and A-vs-B. And U/V.
 
 class SPAKE2:
-    """This class manages one side of a SPAKE2 key negotiation.
-    """
+    "This class manages one side of a SPAKE2 key negotiation."
 
-    def __init__(self, password, side, idA=b"", idB=b"",
+    side = None # set by the subclass
+
+    def __init__(self, password, idA=b"", idB=b"",
                  params=Params1024, entropy_f=None):
         assert isinstance(password, bytes)
         self.pw = password
         self.pw_scalar = params.group.password_to_scalar(password)
 
-        # These names come from the Abdalla/Pointcheval paper.
-        #  variable .. known as .. on A's side, and .. on B's side:
-        #           MN          M                   N
-        #           NM          N                   M
-        #           xy          x                   y
-        if side == SideA:
-            (self.MN, self.NM) = (params.M, params.N)
-        elif side == SideB:
-            (self.MN, self.NM) = (params.N, params.M)
-        else:
-            raise BadSide("side= must be either SideA or SideB")
-        self.side = side
-
         assert isinstance(idA, bytes), repr(idA)
         assert isinstance(idB, bytes), repr(idB)
         self.idA = idA
         self.idB = idB
+
         assert isinstance(params, Params), repr(params)
         self.params = params
         self.entropy_f = entropy_f
@@ -90,7 +79,7 @@ class SPAKE2:
         return outbound_side_and_message
 
     def compute_outbound_message(self):
-        message_elem = self.xy_elem + (self.MN * self.pw_scalar)
+        message_elem = self.xy_elem + (self.my_blinding() * self.pw_scalar)
         self.outbound_message = message_elem.to_bytes()
 
     def finish(self, inbound_side_and_message):
@@ -99,24 +88,23 @@ class SPAKE2:
         self._finished = True
 
         other_side = inbound_side_and_message[0:1]
-        inbound_message = inbound_side_and_message[1:]
-        if self.side == SideA:
-            if other_side != SideB:
+        self.inbound_message = inbound_side_and_message[1:]
+
+        if other_side not in (SideA, SideB):
+            raise OffSides("I don't know what side they're on")
+        if self.side == other_side:
+            if self.side == SideA:
                 raise OffSides("I'm A, but I got a message from A (not B).")
-            X_msg = self.outbound_message
-            Y_msg = inbound_message
-        else:
-            if other_side != SideA:
+            else:
                 raise OffSides("I'm B, but I got a message from B (not A).")
-            X_msg = inbound_message
-            Y_msg = self.outbound_message
 
         group = self.params.group
-        inbound_elem = group.element_from_bytes(inbound_message)
-        K_elem = (inbound_elem + (self.NM * -self.pw_scalar)) * self.xy_exp
+        inbound_elem = group.element_from_bytes(self.inbound_message)
+        K_elem = (inbound_elem + (self.my_unblinding() * -self.pw_scalar)
+                  ) * self.xy_exp
         K_bytes = K_elem.to_bytes()
         transcript = b":".join([self.idA, self.idB,
-                                X_msg, Y_msg, K_bytes,
+                                self.X_msg(), self.Y_msg(), K_bytes,
                                 self.pw])
         key = sha256(transcript).digest()
         return key
@@ -152,13 +140,13 @@ class SPAKE2:
     @classmethod
     def from_serialized(klass, data, params=Params1024):
         d = json.loads(data.decode("ascii"))
-        side = d["side"].encode("ascii")
-        assert side in (SideA, SideB)
         def _should_be_unused(count): raise NotImplementedError
-        self = klass(unhexlify(d["password"].encode("ascii")), side,
+        self = klass(password=unhexlify(d["password"].encode("ascii")),
                      idA=unhexlify(d["idA"].encode("ascii")),
                      idB=unhexlify(d["idB"].encode("ascii")),
                      params=params, entropy_f=_should_be_unused)
+        if d["side"].encode("ascii") != self.side:
+            raise WrongSideSerialized
         if d["hashed_params"] != self.hash_params():
             err = ("SPAKE2.from_serialized() must be called with the same"
                    "params= that were used to create the serialized data."
@@ -166,23 +154,27 @@ class SPAKE2:
             raise WrongGroupError(err)
         group = self.params.group
         self._started = True
-        self.xy_exp = group.scalar_from_bytes(unhexlify(d["xy_exp"].encode("ascii")),
-                                              allow_wrap=False)
+        xy_exp_bytes = unhexlify(d["xy_exp"].encode("ascii"))
+        self.xy_exp = group.scalar_from_bytes(xy_exp_bytes, allow_wrap=False)
         self.xy_elem = group.scalarmult_base(self.xy_exp)
         self.compute_outbound_message()
         return self
 
-# applications should use SPAKE2_A and SPAKE2_B
+# applications should use SPAKE2_A and SPAKE2_B, not raw SPAKE2()
 
 class SPAKE2_A(SPAKE2):
-    def __init__(self, password, params=Params1024, entropy_f=None):
-        SPAKE2.__init__(self, password, SideA, params=params,
-                        entropy_f=entropy_f)
+    side = SideA
+    def my_blinding(self): return self.params.M
+    def my_unblinding(self): return self.params.N
+    def X_msg(self): return self.outbound_message
+    def Y_msg(self): return self.inbound_message
 
 class SPAKE2_B(SPAKE2):
-    def __init__(self, password, params=Params1024, entropy_f=None):
-        SPAKE2.__init__(self, password, SideB, params=params,
-                        entropy_f=entropy_f)
+    side = SideB
+    def my_blinding(self): return self.params.N
+    def my_unblinding(self): return self.params.M
+    def X_msg(self): return self.inbound_message
+    def Y_msg(self): return self.outbound_message
 
 
 # add ECC version for smaller messages/storage
