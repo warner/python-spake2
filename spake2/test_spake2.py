@@ -1,7 +1,7 @@
 
 import unittest
 from . import spake2, util, groups, params, six
-from .spake2 import SPAKE2_A, SPAKE2_B
+from .spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
 from binascii import hexlify
 from hashlib import sha256
 from itertools import count
@@ -111,6 +111,12 @@ class Utils(unittest.TestCase):
     def do_test_unbiased_randrange(self, start, stop, seed):
         num = util.unbiased_randrange(start, stop, entropy_f=PRG(seed))
         self.assertTrue(start <= num < stop, (num, seed))
+
+    def test_xor_keys(self):
+        self.assertEqual(util.xor_keys(b"\x00\x00",
+                                       b"\xff\xff"), b"\xff\xff")
+        self.assertEqual(util.xor_keys(b"\x1c\x02",
+                                       b"\x69\x3f"), b"\x75\x3d")
 
 class Group(unittest.TestCase):
     def assertElementsEqual(self, e1, e2, msg=None):
@@ -313,6 +319,28 @@ class Serialize(unittest.TestCase):
         kA,kB = sA.finish(m1B), sB.finish(m1A)
         self.assertEqual(hexlify(kA), hexlify(kB))
         self.assertEqual(len(kA), len(sha256().digest()))
+
+class Symmetric(unittest.TestCase):
+    def test_success(self):
+        pw = b"password"
+        s1,s2 = SPAKE2_Symmetric(pw), SPAKE2_Symmetric(pw)
+        m1,m2 = s1.start(), s2.start()
+        k1,k2 = s1.finish(m2), s2.finish(m1)
+        self.assertEqual(hexlify(k1), hexlify(k2))
+
+    def test_failure(self):
+        s1,s2 = SPAKE2_Symmetric(b"password"), SPAKE2_Symmetric(b"wrong")
+        m1,m2 = s1.start(), s2.start()
+        k1,k2 = s1.finish(m2), s2.finish(m1)
+        self.assertNotEqual(hexlify(k1), hexlify(k2))
+
+    def test_serialize(self):
+        pw = b"password"
+        s1,s2 = SPAKE2_Symmetric(pw), SPAKE2_Symmetric(pw)
+        m1,m2 = s1.start(), s2.start()
+        s1 = SPAKE2_Symmetric.from_serialized(s1.serialize())
+        k1,k2 = s1.finish(m2), s2.finish(m1)
+        self.assertEqual(hexlify(k1), hexlify(k2))
 
 class Errors(unittest.TestCase):
     def test_start_twice(self):

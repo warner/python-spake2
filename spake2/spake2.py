@@ -3,6 +3,7 @@ import json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
 from .params import Params, Params1024
+from .util import xor_keys
 
 # TODO: switch to ECC
 
@@ -124,9 +125,7 @@ class SPAKE2:
                   ]
         return sha256(b"".join(pieces)).hexdigest()
 
-    def serialize(self):
-        if not self._started:
-            raise SerializedTooEarly("call .start() before .serialize()")
+    def _serialize_to_dict(self):
         group = self.params.group
         d = {"hashed_params": self.hash_params(),
              "side": self.side.decode("ascii"),
@@ -135,11 +134,15 @@ class SPAKE2:
              "password": hexlify(self.pw).decode("ascii"),
              "xy_exp": hexlify(group.scalar_to_bytes(self.xy_exp)).decode("ascii"),
              }
-        return json.dumps(d).encode("ascii")
+        return d
+
+    def serialize(self):
+        if not self._started:
+            raise SerializedTooEarly("call .start() before .serialize()")
+        return json.dumps(self._serialize_to_dict()).encode("ascii")
 
     @classmethod
-    def from_serialized(klass, data, params=Params1024):
-        d = json.loads(data.decode("ascii"))
+    def _deserialize_from_dict(klass, d, params):
         def _should_be_unused(count): raise NotImplementedError
         self = klass(password=unhexlify(d["password"].encode("ascii")),
                      idA=unhexlify(d["idA"].encode("ascii")),
@@ -159,6 +162,10 @@ class SPAKE2:
         self.xy_elem = group.scalarmult_base(self.xy_exp)
         self.compute_outbound_message()
         return self
+    @classmethod
+    def from_serialized(klass, data, params=Params1024):
+        d = json.loads(data.decode("ascii"))
+        return klass._deserialize_from_dict(d, params)
 
 # applications should use SPAKE2_A and SPAKE2_B, not raw SPAKE2()
 
@@ -176,6 +183,44 @@ class SPAKE2_B(SPAKE2):
     def X_msg(self): return self.inbound_message
     def Y_msg(self): return self.outbound_message
 
+class SPAKE2_Symmetric:
+    def __init__(self, password, idA=b"", idB=b"",
+                 params=Params1024, entropy_f=None):
+        self.pw = password
+        self.sA = SPAKE2_A(password, idA, idB, params, entropy_f)
+        self.sB = SPAKE2_B(password, idA, idB, params, entropy_f)
+
+    def start(self):
+        mA = self.sA.start()
+        mB = self.sB.start()
+        return mA+mB
+
+    def finish(self, inbound_side_and_message):
+        l = len(inbound_side_and_message)
+        assert l % 2 == 0
+        inbound_A = inbound_side_and_message[:l/2]
+        inbound_B = inbound_side_and_message[l/2:]
+        assert len(inbound_A) == len(inbound_B)
+        keyA = self.sA.finish(inbound_B)
+        keyB = self.sB.finish(inbound_A)
+        key = xor_keys(keyA, keyB)
+        return key
+
+    def serialize(self):
+        d = {"password": hexlify(self.pw).decode("ascii"),
+             "sA": self.sA._serialize_to_dict(),
+             "sB": self.sB._serialize_to_dict(),
+             }
+        return json.dumps(d).encode("ascii")
+
+    @classmethod
+    def from_serialized(klass, data, params=Params1024):
+        d = json.loads(data.decode("ascii"))
+        pw = unhexlify(d["password"].encode("ascii"))
+        self = klass(password=pw)
+        self.sA = SPAKE2_A._deserialize_from_dict(d["sA"], params)
+        self.sB = SPAKE2_B._deserialize_from_dict(d["sB"], params)
+        return self
 
 # add ECC version for smaller messages/storage
 # consider timing attacks

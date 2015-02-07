@@ -128,35 +128,42 @@ against an `SPAKE2_A` talking to another `SPAKE2_A`. Typically a "client"
 will take on the `A` role, and the "server" will be `B`.
 
 This is a nuisance for more egalitarian protocols, where there's no clear way
-to assign these roles ahead of time. One suggestion is to run two instances
-of the protocol at the same time, crossed, and XOR the resulting keys
-together:
+to assign these roles ahead of time. In this case, use `SPAKE2_Symmetric` on
+both sides. This internally runs two instances of the protocol at the same
+time, in a cross-over configuration (A->B and B->A), and XORs the resulting
+keys together.
 
-Carol would do:
+Carol does:
 
 ```python
-sa,sb = SPAKE2_A(pw), SPAKE2_B(pw)
-ma,mb = sa.start(), sb.start()
-send((ma,mb))
+s1 = SPAKE2_Symmetric(pw)
+outmsg1 = s1.start()
+send(outmsg1)
 ```
 
 Dave does the same:
 ```python
-sa,sb = SPAKE2_A(pw), SPAKE2_B(pw)
-ma,mb = sa.start(), sb.start()
-send((ma,mb))
+s2 = SPAKE2_Symmetric(pw)
+outmsg2 = s2.start()
+send(outmsg2)
 ```
 
-Carol then swaps Dave's incoming messages, and builds both keys:
+Carol then processes Dave's incoming message:
 ```python
-(inmsg_a, inmsg_b) = receive()
-k1 = sa.finish(inmsg_b)
-k2 = sb.finish(inmsg_a)
-key = spake2.util.xor_keys(k1, k2)
+inmsg2 = receive() # this is outmsg1
+key = s1.finish(inmsg2)
 ```
 
-and Dave does the same. Since the keys are combined before use, this should
-not improve the attacker's chances of guessing the password.
+And Dave does the same:
+```python
+inmsg1 = receive() # this is outmsg2
+key = s2.finish(inmsg1)
+```
+
+Since the keys are combined before use, this should not improve the
+attacker's chances of guessing the password. Note that this doubles the
+processing time and message size. It has also not been reviewed like the
+original protocol: use with caution.
 
 ## Identifier Strings
 
