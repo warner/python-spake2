@@ -49,7 +49,7 @@ class Speed(Test):
             return "%.1fus" % (t*1e6)
 
         for params in ["Params1024", "Params2048", "Params3072"]:
-            S1 = "from spake2 import SPAKE2, SPAKE2_A, SPAKE2_B, %s" % params
+            S1 = "from spake2 import SPAKE2_A, SPAKE2_B, %s" % params
             S2 = "sB = SPAKE2_B(b'password', params=%s)" % params
             S3 = "mB = sB.start()"
             S4 = "sA = SPAKE2_A(b'password', params=%s)" % params
