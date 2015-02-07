@@ -80,6 +80,9 @@ The shared "key" can be used as an AES data-encryption key, or as an HMAC key
 to provide data integrity. It can also be fed into [HKDF] [1] to derive other
 session keys as necessary.
 
+The `SPAKE2` instances, and the messages they create, are single-use. Create
+a new one for each new session.
+
 ### Key Confirmation
 
 To safely test for identical keys before use, you can perform a second
@@ -175,6 +178,45 @@ to the file-transfer server, and vice versa.
 
 If provided, `idA` and `idB` must be bytestrings. They default to an empty
 string.
+
+## Serialization
+
+Sometimes, you can't hold the SPAKE2 instance in memory for the whole
+negotiation: perhaps all your program state is stored in a database, and
+nothing lives in RAM for more than a few moments. You can persist the data
+from a SPAKE2 instance with `data = p.serialize()`, after the call to
+`start`. Then later, when the inbound message is received, you can
+reconstruct the instance with `p = SPAKE2_A.from_serialized(data)` before
+calling `p.finish(msg)`.
+
+```python
+def first():
+    p = SPAKE2_A(password)
+    send(p.start())
+    open('saved','w').write(p.serialize())
+ 
+def second(inbound_message):
+    p = SPAKE2_A.from_serialized(open('saved').read())
+    key = p.finish(inbound_message)
+    return key
+```
+
+The instance data is highly sensitive and includes the password: protect it
+carefully. An eavesdropper who learns the instance state from just one side
+will be able to reconstruct the shared key. `data` is a printable ASCII
+bytestring (the JSON-encoding of a small dictionary). For `Params1024`, the
+serialized data requires 194 bytes.
+
+Note that you must restore the instance with the same side (`SPAKE2_A` vs
+`SPAKE2_B`) and `params=` (if overridden) as you used when first creating it.
+Otherwise `from_serialized()` will throw an exception.
+
+Also remember that you must never re-use a SPAKE2 instance for multiple key
+agreements: that would reveal the key and/or password. Never use
+`.from_serialized()` more than once on the same saved state, and delete the
+state as soon as the incoming message is processed. SPAKE2 has internal
+checks to throw exceptions when instances are used multiple times, but the
+serialize/restore process can bypass those checks, so use with care.
 
 ## Security
 

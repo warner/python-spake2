@@ -42,79 +42,6 @@ SideB = b"B"
 
 class SPAKE2:
     """This class manages one side of a SPAKE2 key negotiation.
-
-    Two instances of this class, each with the same password, in separate
-    processes on either side of a network connection, can cooperatively agree
-    upon a strong random session key.
-
-    Both sides must be using the same 'parameters' and the same passwords.
-    The sides must play different roles: one side is A, the other side is B.
-
-    Create an instance with SPAKE2(password=pw, side=SideA) (or side=SideB),
-    where 'password' is a bytestring. You can also pass an optional params=
-    value (one of [params.Params1024, Params2048, Params3072], for increasing
-    levels of security and CPU usage). Any two PAKE communicating instances
-    must use identical params=, and different side= values.
-
-    Once constructed, you will need to call start() and finish() in order,
-    passing the output of start() over the wire, where it forms the input to
-    the other instance's finish():
-
-        from spake2 import SPAKE2, SideA
-        p = SPAKE2('password', SideA)
-        outbound_message = p.start()
-        send(outbound_message) # send to other side, somehow
-        inbound_message = receive() # get this from other side, somehow
-        key = p.finish(inbound_message)
-
-    (The other side, which receives 'outbound_message' and creates
-    'inbound_message', will use `SPAKE2('password', SideB)`).
-
-    The secret 'key' that comes out will be a bytestring of length 256 (the
-    output of a SHA256 hash function). If both sides used the same password,
-    both sides will wind up with the same key, otherwise they will have
-    different keys. You will probably want to confirm this equivalence before
-    relying upon it (but don't reveal the key to the other side in doing so,
-    in case you aren't talking to the right party and your keys are really
-    different). Note that this introduces an additional asymmetry to the
-    protocol (one side learns of the mismatch before the other). For example:
-
-        A: hhkey = sha256(sha256(Akey).digest()).digest()
-        A: send(hhkey)
-          B: hhkey = receive()
-          B: assert sha256(sha256(Bkey).digest()).digest() == hhkey
-          B: hkey = sha256(Bkey).digest()
-          B: send(hkey)
-        A: hkey = receive()
-        A: assert sha256(Akey).digest() == hkey
-
-    Sometimes, you can't hold the SPAKE2 instance in memory for the whole
-    negotiation: perhaps all your program state is stored in a database, and
-    nothing lives in RAM for more than a few moments. You can persist the
-    data from an instance with `data = p.serialize()`, after the call to
-    `start`. Then later, when the inbound message is received, you can
-    reconstruct the instance with `p = SPAKE2.from_serialized(data)` and can
-    `finish`. The instance data is sensitive: protect it better than you
-    would the original password. An attacker who learns the instance state
-    from both sides, or an eavesdropper who learns the instance state from
-    just one side, will be able to reconstruct the shared key. `data` is a
-    printable ASCII string (the JSON-encoding of a small dictionary). For
-    params_80, the serialized data is typically about 1528 bytes.
-
-     def first():
-       p = SPAKE2(password, SideA)
-       send(p.start())
-       open('saved','w').write(p.serialize())
-
-     def second(inbound_message):
-       p = SPAKE2.from_serialized(open('saved').read())
-       key = p.finish(inbound_message)
-       return key
-
-    The message returned by start() is a bytestring (about 129 bytes long for
-    params_80). You may need to base64-encode it before sending it over a
-    non-8-bit-clean connection.
-
     """
 
     def __init__(self, password, side, idA=b"", idB=b"",
@@ -244,6 +171,8 @@ class SPAKE2:
         self.xy_elem = group.scalarmult_base(self.xy_exp)
         self.compute_outbound_message()
         return self
+
+# applications should use SPAKE2_A and SPAKE2_B
 
 class SPAKE2_A(SPAKE2):
     def __init__(self, password, params=Params1024, entropy_f=None):
