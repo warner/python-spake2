@@ -262,16 +262,16 @@ To run the built-in speed tests, just run `python setup.py speed`.
 
 SPAKE2 consists of two phases, separated by a single message exchange. The
 two phases take roughly equal time. On my 2012 Mac Mini (2.6GHz Core-i7), the
-default `Params1024` security level takes about 3.4ms to complete both
+default `Params1024` security level takes about 4.3ms to complete both
 phases. Larger parameter sets are slower and require larger messages (and
 their serialized state is larger), but are more secure. The complete output
 of `python setup.py speed` is:
 
-    Params1024: msglen=129, statelen=194, full=3.4ms, start=1.7ms
-    Params2048: msglen=257, statelen=210, full=16.3ms, start=8.2ms
-    Params3072: msglen=385, statelen=218, full=32.4ms, start=16.1ms
+    Params1024: msglen=129, statelen=194, full=4.3ms, start=1.7ms
+    Params2048: msglen=257, statelen=210, full=19.7ms, start=8.0ms
+    Params3072: msglen=385, statelen=218, full=39.1ms, start=15.6ms
 
-A slower CPU (1.8GHz Intel Atom) takes about 8x as long (26ms/125ms/255ms).
+A slower CPU (1.8GHz Intel Atom) takes about 8x as long (32ms/157ms/328ms).
 
 This library uses only Python. A version which used C speedups for the large
 modular multiplication operations would probably be an order of magnitude

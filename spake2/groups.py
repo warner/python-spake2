@@ -124,7 +124,9 @@ class IntegerGroup:
         assert len(b) == self.element_size_bytes
         i = bytes_to_number(b)
         assert 1 <= i < self.p  # Zp* excludes 0
-        return self.element_class(self, i)
+        e = self.element_class(self, i)
+        assert self.is_member(e)
+        return e
 
     def scalarmult(self, e1, i):
         assert isinstance(e1, _GroupElement)
@@ -169,6 +171,11 @@ def hash3072(b):
                      sha512(b"2:"+b), sha512(b"3:"+b),
                      sha512(b"4:"+b), sha512(b"5:"+b)])
 
+
+# the 1024-bit group originally came from the J-PAKE demo (java) code,
+# http://haofeng66.googlepages.com/JPAKEDemo.java . That java code
+# recommended these 2048 and 3072 bit groups from
+# http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/DSA2_All.pdf
 
 I1024 = IntegerGroup(
     p=0xfd7f53811d75122952df4a9c2eece4e7f611b7523cef4400c31e3f80b6512669455d402251fb593d8d58fabfc5f5ba30f6cb9b556cd7813b801d346ff26660b76b9950a5a49f9fe8047b1022c24fbba9d7feb7c61bf83b57e7c6a8a6150f04fb83f6d3c51ec3023554135a169132f675f3ae2b61d72aeff22203199dd14801c7,
