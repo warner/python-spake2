@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import sys, subprocess, timeit
+import timeit
 from distutils.core import setup, Command
 import versioneer
 versioneer.VCS = "git"
