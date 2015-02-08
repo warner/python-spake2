@@ -257,6 +257,13 @@ class Basic(unittest.TestCase):
         self.assertEqual(len(kA), len(sha256().digest()))
         self.assertEqual(len(kB), len(sha256().digest()))
 
+    def test_reflect(self):
+        pw = b"password"
+        s1 = SPAKE2_A(pw)
+        m1 = s1.start()
+        reflected = b"B" + m1[1:]
+        self.assertRaises(spake2.ReflectionThwarted, s1.finish, reflected)
+
 class Parameters(unittest.TestCase):
     def do_tests(self, p):
         pw = b"password"
@@ -341,6 +348,13 @@ class Symmetric(unittest.TestCase):
         s1 = SPAKE2_Symmetric.from_serialized(s1.serialize())
         k1,k2 = s1.finish(m2), s2.finish(m1)
         self.assertEqual(hexlify(k1), hexlify(k2))
+
+    def test_reflect(self):
+        pw = b"password"
+        s1 = SPAKE2_Symmetric(pw)
+        m1 = s1.start()
+        # reflect Alice's message back to her
+        self.assertRaises(spake2.ReflectionThwarted, s1.finish, m1)
 
 class Errors(unittest.TestCase):
     def test_start_twice(self):

@@ -24,6 +24,8 @@ class WrongSideSerialized(PAKEError):
     """You tried to unserialize data stored for the other side."""
 class WrongGroupError(PAKEError):
     pass
+class ReflectionThwarted(PAKEError):
+    """Someone tried to reflect our message back to us."""
 
 SideA = b"A"
 SideB = b"B"
@@ -101,6 +103,8 @@ class SPAKE2:
 
         group = self.params.group
         inbound_elem = group.element_from_bytes(self.inbound_message)
+        if inbound_elem.to_bytes() == self.outbound_message:
+            raise ReflectionThwarted
         K_elem = (inbound_elem + (self.my_unblinding() * -self.pw_scalar)
                   ) * self.xy_exp
         K_bytes = K_elem.to_bytes()
@@ -203,6 +207,8 @@ class SPAKE2_Symmetric:
         assert len(inbound_A) == len(inbound_B)
         keyA = self.sA.finish(inbound_B)
         keyB = self.sB.finish(inbound_A)
+        if keyA == keyB:
+            raise ReflectionThwarted
         key = xor_keys(keyA, keyB)
         return key
 
