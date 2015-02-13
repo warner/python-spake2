@@ -1,7 +1,8 @@
 
-from .spake2 import (SPAKE2_A, SPAKE2_B, PAKEError)
+from .spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric, SPAKEError
 from .params import Params1024, Params2048, Params3072
-_hush_pyflakes = [SPAKE2_A, SPAKE2_B, PAKEError,
+
+_hush_pyflakes = [SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric, SPAKEError,
                   Params1024, Params2048, Params3072]
 del _hush_pyflakes
 

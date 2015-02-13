@@ -9,24 +9,24 @@ from .util import xor_keys
 
 DefaultParams = Params2048
 
-class PAKEError(Exception):
+class SPAKEError(Exception):
     pass
-class OnlyCallStartOnce(PAKEError):
+class OnlyCallStartOnce(SPAKEError):
     """start() may only be called once. Re-using a SPAKE2 instance is likely
     to reveal the password or the derived key."""
-class OnlyCallFinishOnce(PAKEError):
+class OnlyCallFinishOnce(SPAKEError):
     """finish() may only be called once. Re-using a SPAKE2 instance is likely
     to reveal the password or the derived key."""
-class OffSides(PAKEError):
+class OffSides(SPAKEError):
     """I received a message from someone on the same side that I'm on: I was
     expecting the opposite side."""
-class SerializedTooEarly(PAKEError):
+class SerializedTooEarly(SPAKEError):
     pass
-class WrongSideSerialized(PAKEError):
+class WrongSideSerialized(SPAKEError):
     """You tried to unserialize data stored for the other side."""
-class WrongGroupError(PAKEError):
+class WrongGroupError(SPAKEError):
     pass
-class ReflectionThwarted(PAKEError):
+class ReflectionThwarted(SPAKEError):
     """Someone tried to reflect our message back to us."""
 
 SideA = b"A"
