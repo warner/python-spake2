@@ -1,2 +1,4 @@
 include versioneer.py
 include spake2/_version.py
+include README.md NEWS LICENSE
+include .travis.yml .coveragerc
