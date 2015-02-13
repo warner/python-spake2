@@ -285,9 +285,9 @@ class Parameters(unittest.TestCase):
         for p in [params.Params1024, params.Params2048, params.Params3072]:
             self.do_tests(p)
 
-    def test_default_is_1024(self):
+    def test_default_is_2048(self):
         pw = b"password"
-        sA,sB = SPAKE2_A(pw, params=params.Params1024), SPAKE2_B(pw)
+        sA,sB = SPAKE2_A(pw, params=params.Params2048), SPAKE2_B(pw)
         m1A,m1B = sA.start(), sB.start()
         kA,kB = sA.finish(m1B), sB.finish(m1A)
         self.assertEqual(hexlify(kA), hexlify(kB))
@@ -386,17 +386,18 @@ class Errors(unittest.TestCase):
 
 
     def test_unserialize_wrong(self):
-        s = SPAKE2_A(b"password", params=params.Params2048)
+        s = SPAKE2_A(b"password", params=params.Params1024)
         s.start()
         data = s.serialize()
-        SPAKE2_A.from_serialized(data, params=params.Params2048) # this is ok
+        SPAKE2_A.from_serialized(data, params=params.Params1024) # this is ok
         self.assertRaises(spake2.WrongGroupError,
-                          SPAKE2_A.from_serialized, data) # default is P1024
+                          SPAKE2_A.from_serialized, data) # default is P2048
         self.assertRaises(spake2.WrongGroupError,
-                          SPAKE2_A.from_serialized, data, params=params.Params3072)
+                          SPAKE2_A.from_serialized, data,
+                          params=params.Params3072)
         self.assertRaises(spake2.WrongSideSerialized,
                           SPAKE2_B.from_serialized, data,
-                          params=params.Params2048)
+                          params=params.Params1024)
 
 if __name__ == '__main__':
     unittest.main()

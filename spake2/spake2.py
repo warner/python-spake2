@@ -2,10 +2,12 @@
 import json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
-from .params import Params, Params1024
+from .params import Params, Params2048
 from .util import xor_keys
 
 # TODO: switch to ECC
+
+DefaultParams = Params2048
 
 class PAKEError(Exception):
     pass
@@ -49,7 +51,7 @@ class SPAKE2:
     side = None # set by the subclass
 
     def __init__(self, password, idA=b"", idB=b"",
-                 params=Params1024, entropy_f=None):
+                 params=DefaultParams, entropy_f=None):
         assert isinstance(password, bytes)
         self.pw = password
         self.pw_scalar = params.group.password_to_scalar(password)
@@ -167,7 +169,7 @@ class SPAKE2:
         self.compute_outbound_message()
         return self
     @classmethod
-    def from_serialized(klass, data, params=Params1024):
+    def from_serialized(klass, data, params=DefaultParams):
         d = json.loads(data.decode("ascii"))
         return klass._deserialize_from_dict(d, params)
 
@@ -189,7 +191,7 @@ class SPAKE2_B(SPAKE2):
 
 class SPAKE2_Symmetric:
     def __init__(self, password, idA=b"", idB=b"",
-                 params=Params1024, entropy_f=None):
+                 params=DefaultParams, entropy_f=None):
         self.pw = password
         self.sA = SPAKE2_A(password, idA, idB, params, entropy_f)
         self.sB = SPAKE2_B(password, idA, idB, params, entropy_f)
@@ -220,7 +222,7 @@ class SPAKE2_Symmetric:
         return json.dumps(d).encode("ascii")
 
     @classmethod
-    def from_serialized(klass, data, params=Params1024):
+    def from_serialized(klass, data, params=DefaultParams):
         d = json.loads(data.decode("ascii"))
         pw = unhexlify(d["password"].encode("ascii"))
         self = klass(password=pw)

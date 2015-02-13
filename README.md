@@ -23,8 +23,8 @@ trip is necessary to establish the session key. If key-confirmation is
 necessary, that will require a second round trip.
 
 All messages are bytestrings. For the default security level (using a
-1024-bit modulus, roughly equivalent to an 80-bit symmetric key), the message
-is 129 bytes long.
+2048-bit modulus, roughly equivalent to an 112-bit symmetric key), the
+message is 257 bytes long.
 
 ## Usage
 
@@ -232,7 +232,7 @@ you use, which also influence the execution speed. Use the strongest
 parameters your time budget can afford.
 
 The library comes with three parameter sets in the `spake2.params` module:
-`Params1024` (the default), `Params2048`, and `Params3072`, offering 80-bit,
+`Params1024`, `Params2048` (the default), and `Params3072`, offering 80-bit,
 112-bit, and 128-bit security levels respectively.
 
 To override the default parameters, include a `params=` value when you create
@@ -262,10 +262,10 @@ To run the built-in speed tests, just run `python setup.py speed`.
 
 SPAKE2 consists of two phases, separated by a single message exchange. The
 two phases take roughly equal time. On my 2012 Mac Mini (2.6GHz Core-i7), the
-default `Params1024` security level takes about 4.3ms to complete both
-phases. Larger parameter sets are slower and require larger messages (and
-their serialized state is larger), but are more secure. The complete output
-of `python setup.py speed` is:
+default `Params2048` security level takes about 20ms to complete both phases.
+Larger parameter sets are slower and require larger messages (and their
+serialized state is larger), but are more secure. The complete output of
+`python setup.py speed` is:
 
     Params1024: msglen=129, statelen=194, full=4.3ms, start=1.7ms
     Params2048: msglen=257, statelen=210, full=19.7ms, start=8.0ms
@@ -276,7 +276,7 @@ A slower CPU (1.8GHz Intel Atom) takes about 8x as long (32ms/157ms/328ms).
 This library uses only Python. A version which used C speedups for the large
 modular multiplication operations would probably be an order of magnitude
 faster. A future release will include a pure-python elliptic-curve group
-(Ed25519) for higher security speed.
+(Ed25519) for higher security and speed.
 
 ## Testing
 
