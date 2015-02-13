@@ -1,0 +1,7 @@
+
+User-Visible Changes in python-spake2
+
+* Release 0.1 (13-Feb-2015)
+
+Initial release. Includes SPAKE2_A/SPAKE2_B, and SPAKE2_Symmetric. Provides
+three integer-group parameter sets (Params1024, Params2048, Params3072).
