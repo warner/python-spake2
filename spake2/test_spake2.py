@@ -6,6 +6,11 @@ from binascii import hexlify
 from hashlib import sha256
 from itertools import count
 
+ALL_INTEGER_GROUPS = [groups.I1024, groups.I2048, groups.I3072]
+ALL_GROUPS = ALL_INTEGER_GROUPS
+ALL_INTEGER_PARAMS = [params.Params1024, params.Params2048, params.Params3072]
+ALL_PARAMS = ALL_INTEGER_PARAMS
+
 class PRG:
     # this returns a callable which, when invoked with an integer N, will
     # return N pseudorandom bytes derived from the seed
@@ -125,97 +130,98 @@ class Group(unittest.TestCase):
         self.assertNotEqual(hexlify(e1.to_bytes()), hexlify(e2.to_bytes()), msg)
 
     def test_basic(self):
-        g = groups.I1024
-        fr = PRG(0)
-        i = g.random_scalar(entropy_f=fr)
-        self.assertTrue(0 <= i < g.q)
-        b = g.scalar_to_bytes(i)
-        self.assertEqual(len(b), g.scalar_size_bytes)
-        self.assertEqual(i, g.scalar_from_bytes(b, False))
-        i,e = g.random_element(entropy_f=fr)
-        self.assertEqual(len(e.to_bytes()), g.element_size_bytes)
-        self.assertEqual(g.scalarmult_base(i).to_bytes(), e.to_bytes())
-        e = g.arbitrary_element(b"")
-        self.assertEqual(len(e.to_bytes()), g.element_size_bytes)
-        self.assertElementsEqual(e, g.element_from_bytes(e.to_bytes()))
+        for g in ALL_GROUPS:
+            fr = PRG(0)
+            i = g.random_scalar(entropy_f=fr)
+            self.assertTrue(0 <= i < g.q)
+            b = g.scalar_to_bytes(i)
+            self.assertEqual(len(b), g.scalar_size_bytes)
+            self.assertEqual(i, g.scalar_from_bytes(b, False))
+            i,e = g.random_element(entropy_f=fr)
+            self.assertEqual(len(e.to_bytes()), g.element_size_bytes)
+            self.assertEqual(g.scalarmult_base(i).to_bytes(), e.to_bytes())
+            e = g.arbitrary_element(b"")
+            self.assertEqual(len(e.to_bytes()), g.element_size_bytes)
+            self.assertElementsEqual(e, g.element_from_bytes(e.to_bytes()))
 
     def test_math(self):
-        g = groups.I1024
-        sb = g.scalarmult_base
-        e_zero = sb(0)
-        e1 = sb(1)
-        e2 = sb(2)
-        self.assertElementsEqual(e1 + e_zero, e1)
-        self.assertElementsEqual(e1 + e1, e1 * 2)
-        self.assertElementsEqual(e1 * 2, e2)
-        self.assertElementsEqual(e1 + e2, e2 + e1)
-        e_m1 = sb(g.q-1)
-        self.assertElementsEqual(e_m1, sb(-1))
-        self.assertElementsEqual(e_m1 + e1, e_zero)
-        e3 = sb(3)
-        e4 = sb(4)
-        e5 = sb(5)
-        self.assertElementsEqual(e2+e3, e1+e4)
-        self.assertElementsEqual(e5 - e3, e2)
-        self.assertElementsEqual(e1 * g.q, e_zero)
-        self.assertElementsEqual(e2 * g.q, e_zero)
-        self.assertElementsEqual(e3 * g.q, e_zero)
-        self.assertElementsEqual(e4 * g.q, e_zero)
-        self.assertElementsEqual(e5 * g.q, e_zero)
+        for g in ALL_GROUPS:
+            sb = g.scalarmult_base
+            e_zero = sb(0)
+            e1 = sb(1)
+            e2 = sb(2)
+            self.assertElementsEqual(e1 + e_zero, e1)
+            self.assertElementsEqual(e1 + e1, e1 * 2)
+            self.assertElementsEqual(e1 * 2, e2)
+            self.assertElementsEqual(e1 + e2, e2 + e1)
+            e_m1 = sb(g.q-1)
+            self.assertElementsEqual(e_m1, sb(-1))
+            self.assertElementsEqual(e_m1 + e1, e_zero)
+            e3 = sb(3)
+            e4 = sb(4)
+            e5 = sb(5)
+            self.assertElementsEqual(e2+e3, e1+e4)
+            self.assertElementsEqual(e5 - e3, e2)
+            self.assertElementsEqual(e1 * g.q, e_zero)
+            self.assertElementsEqual(e2 * g.q, e_zero)
+            self.assertElementsEqual(e3 * g.q, e_zero)
+            self.assertElementsEqual(e4 * g.q, e_zero)
+            self.assertElementsEqual(e5 * g.q, e_zero)
 
     def test_bad_math(self):
-        g = groups.I1024
-        zero = g.identity
-        self.assertRaises(TypeError, lambda: zero * zero)
-        self.assertRaises(TypeError, lambda: zero + 1)
-        self.assertRaises(TypeError, lambda: zero - 1)
+        for g in ALL_GROUPS:
+            zero = g.identity
+            self.assertRaises(TypeError, lambda: zero * zero)
+            self.assertRaises(TypeError, lambda: zero + 1)
+            self.assertRaises(TypeError, lambda: zero - 1)
 
     def test_is_member(self):
-        g = groups.I1024
-        fr = PRG(0)
-        self.assertTrue(g.is_member(g.identity))
-        self.assertTrue(g.is_member(g.scalarmult_base(2)))
-        self.assertTrue(g.is_member(g.scalarmult_base(3)))
-        self.assertTrue(g.is_member(g.random_element(fr)[1]))
-        g2 = groups.I2048
-        self.assertFalse(g.is_member(g2.identity))
-        # we must bypass the normal API to create an element that's marked as
-        # being of the right group, but the actual number is not in the
-        # subgroup
-        self.assertFalse(g.is_member(groups._GroupElement(g, 0)))
-        self.assertFalse(g.is_member(groups._GroupElement(g, 2)))
+        for g in ALL_GROUPS:
+            fr = PRG(0)
+            self.assertTrue(g.is_member(g.identity))
+            self.assertTrue(g.is_member(g.scalarmult_base(2)))
+            self.assertTrue(g.is_member(g.scalarmult_base(3)))
+            self.assertTrue(g.is_member(g.random_element(fr)[1]))
+        self.assertFalse(groups.I1024.is_member(groups.I2048.identity))
+        for g in ALL_INTEGER_GROUPS:
+            # we must bypass the normal API to create an element that's
+            # marked as being of the right group, but the actual number is
+            # not in the subgroup
+            self.assertFalse(g.is_member(groups._GroupElement(g, 0)))
+            self.assertFalse(g.is_member(groups._GroupElement(g, 2)))
 
     def test_arbitrary_element(self):
-        g = groups.I1024
-        gx = g.arbitrary_element(b"")
-        # arbitrary_element once had a bug, it returned elements that were
-        # not in the subgroup. Test against that.
-        self.assertTrue(g.is_member(gx))
-        self.assertElementsEqual(gx*-2, (gx*2)*-1)
-        gy = g.arbitrary_element(b"2")
-        self.assertElementsNotEqual(gx, gy)
+        for g in ALL_GROUPS:
+            gx = g.arbitrary_element(b"")
+            # arbitrary_element once had a bug, it returned elements that were
+            # not in the subgroup. Test against that.
+            self.assertTrue(g.is_member(gx))
+            self.assertElementsEqual(gx*-2, (gx*2)*-1)
+            gy = g.arbitrary_element(b"2")
+            self.assertElementsNotEqual(gx, gy)
 
     def test_blinding(self):
-        g = groups.I1024
-        fr = PRG(0)
-        _, pubkey = g.random_element(fr)
-        _, U = g.random_element(fr)
-        pw = g.random_scalar(fr)
-        # X+U*pw -U*pw == X
-        blinding_factor = U * pw
-        blinded_pubkey = pubkey + blinding_factor
-        inverse_pw = g.invert_scalar(pw)
-        inverse_blinding_factor = U * inverse_pw
-        self.assertElementsEqual(inverse_blinding_factor, U * -pw)
-        self.assertElementsEqual(U * -pw, (U * pw) * -1)
-        self.assertElementsEqual(inverse_blinding_factor, blinding_factor * -1)
-        unblinded_pubkey = blinded_pubkey + inverse_blinding_factor
-        self.assertElementsEqual(pubkey, unblinded_pubkey)
+        for g in ALL_GROUPS:
+            fr = PRG(0)
+            _, pubkey = g.random_element(fr)
+            _, U = g.random_element(fr)
+            pw = g.random_scalar(fr)
+            # X+U*pw -U*pw == X
+            blinding_factor = U * pw
+            blinded_pubkey = pubkey + blinding_factor
+            inverse_pw = g.invert_scalar(pw)
+            inverse_blinding_factor = U * inverse_pw
+            self.assertElementsEqual(inverse_blinding_factor, U * -pw)
+            self.assertElementsEqual(U * -pw, (U * pw) * -1)
+            self.assertElementsEqual(inverse_blinding_factor,
+                                     blinding_factor * -1)
+            unblinded_pubkey = blinded_pubkey + inverse_blinding_factor
+            self.assertElementsEqual(pubkey, unblinded_pubkey)
 
     def test_password(self):
-        g = groups.I1024
-        i = g.password_to_scalar(b"")
-        self.assertTrue(0 <= i < g.q)
+        for g in ALL_GROUPS:
+            i = g.password_to_scalar(b"")
+            self.assertTrue(0 <= i < g.q)
 
     def test_math_trivial(self):
         g = I23
@@ -241,8 +247,7 @@ I23 = groups.IntegerGroup(p=23, q=11, g=2,
 class Basic(unittest.TestCase):
     def test_success(self):
         pw = b"password"
-        p = params.Params1024
-        sA,sB = SPAKE2_A(pw, params=p), SPAKE2_B(pw, params=p)
+        sA,sB = SPAKE2_A(pw), SPAKE2_B(pw)
         m1A,m1B = sA.start(), sB.start()
         kA,kB = sA.finish(m1B), sB.finish(m1A)
         self.assertEqual(hexlify(kA), hexlify(kB))
@@ -265,25 +270,22 @@ class Basic(unittest.TestCase):
         self.assertRaises(spake2.ReflectionThwarted, s1.finish, reflected)
 
 class Parameters(unittest.TestCase):
-    def do_tests(self, p):
-        pw = b"password"
-        sA,sB = SPAKE2_A(pw, params=p), SPAKE2_B(pw, params=p)
-        m1A,m1B = sA.start(), sB.start()
-        #print len(json.dumps(m1A))
-        kA,kB = sA.finish(m1B), sB.finish(m1A)
-        self.assertEqual(hexlify(kA), hexlify(kB))
-        self.assertEqual(len(kA), len(sha256().digest()))
-
-        sA,sB = SPAKE2_A(pw, params=p), SPAKE2_B(b"passwerd", params=p)
-        m1A,m1B = sA.start(), sB.start()
-        kA,kB = sA.finish(m1B), sB.finish(m1A)
-        self.assertNotEqual(hexlify(kA), hexlify(kB))
-        self.assertEqual(len(kA), len(sha256().digest()))
-        self.assertEqual(len(kB), len(sha256().digest()))
-
     def test_params(self):
-        for p in [params.Params1024, params.Params2048, params.Params3072]:
-            self.do_tests(p)
+        for p in ALL_PARAMS:
+            pw = b"password"
+            sA,sB = SPAKE2_A(pw, params=p), SPAKE2_B(pw, params=p)
+            m1A,m1B = sA.start(), sB.start()
+            #print len(json.dumps(m1A))
+            kA,kB = sA.finish(m1B), sB.finish(m1A)
+            self.assertEqual(hexlify(kA), hexlify(kB))
+            self.assertEqual(len(kA), len(sha256().digest()))
+
+            sA,sB = SPAKE2_A(pw, params=p), SPAKE2_B(b"passwerd", params=p)
+            m1A,m1B = sA.start(), sB.start()
+            kA,kB = sA.finish(m1B), sB.finish(m1A)
+            self.assertNotEqual(hexlify(kA), hexlify(kB))
+            self.assertEqual(len(kA), len(sha256().digest()))
+            self.assertEqual(len(kB), len(sha256().digest()))
 
     def test_default_is_2048(self):
         pw = b"password"
