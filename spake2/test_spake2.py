@@ -225,7 +225,7 @@ class Group(unittest.TestCase):
         e4 = g.scalarmult_base(4)
         e5 = g.scalarmult_base(5)
         e6 = g.scalarmult_base(6)
-        self.assertEqual([e1._x, e2._x, e3._x, e4._x, e5._x, e6._x],
+        self.assertEqual([e1._e, e2._e, e3._e, e4._e, e5._e, e6._e],
                          [2, 4, 8, 16, 9, 18])
         self.assertElementsEqual(e1 + e1, e1 * 2)
         self.assertElementsEqual(e1 * 2, e2)

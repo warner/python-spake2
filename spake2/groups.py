@@ -5,9 +5,9 @@ from .util import (size_bits, size_bytes, unbiased_randrange,
                    bytes_to_number, number_to_bytes)
 
 class _GroupElement:
-    def __init__(self, group, x):
+    def __init__(self, group, e):
         self._group = group
-        self._x = x
+        self._e = e
 
     def __mul__(self, other):
         if not isinstance(other, integer_types):
@@ -100,7 +100,7 @@ class IntegerGroup(BaseGroup):
 
         # double-check that the generator has the right order
         gen = self.element_class(self, self.g)
-        assert (gen * self.q)._x == 1
+        assert (gen * self.q)._e == 1
 
         self.identity = self.element_class(self, self.g)
 
@@ -128,7 +128,7 @@ class IntegerGroup(BaseGroup):
     def is_member(self, e):
         if not e._group is self:
             return False
-        if pow(e._x, self.q, self.p) == 1:
+        if pow(e._e, self.q, self.p) == 1:
             return True
         return False
 
@@ -136,7 +136,7 @@ class IntegerGroup(BaseGroup):
         # for sending to other side, and hashing into transcript
         assert isinstance(e, _GroupElement)
         assert e._group is self
-        return number_to_bytes(e._x, self.p)
+        return number_to_bytes(e._e, self.p)
 
     def element_from_bytes(self, b):
         # for receiving from other side: test group membership here
@@ -152,14 +152,14 @@ class IntegerGroup(BaseGroup):
         assert isinstance(e1, _GroupElement)
         assert e1._group is self
         assert isinstance(i, integer_types)
-        return self.element_class(self, pow(e1._x, i % self.q, self.p))
+        return self.element_class(self, pow(e1._e, i % self.q, self.p))
 
     def add(self, e1, e2):
         assert isinstance(e1, _GroupElement)
         assert e1._group is self
         assert isinstance(e2, _GroupElement)
         assert e2._group is self
-        return self.element_class(self, (e1._x * e2._x) % self.p)
+        return self.element_class(self, (e1._e * e2._e) % self.p)
 
 
 def sha256(b):
