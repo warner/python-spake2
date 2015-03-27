@@ -4,6 +4,66 @@ from .six import integer_types
 from .util import (size_bits, size_bytes, unbiased_randrange,
                    bytes_to_number, number_to_bytes)
 
+"""Interface specification for a Group.
+
+A cyclic abelian group, in the mathematical sense, is a collection of
+'elements' and a (binary) operation that takes two elements and produces a
+third. It has the following additional properties:
+
+* there is an 'identity' element named 0, and X+0=X
+* there is a distinguished 'generator' element G
+* adding G to 0 'n' times is called scalar multiplication: Y=n*G
+* this addition loops around after 'q' times, called the 'order'
+* so (n+k*q)*X = n*X
+* scalar multiplication is associative, n*(X+Y) = n*X+n*Y
+* 'scalar division' is really multiplying by (q-n)
+
+A 'scalar' is an integer in [0,q-1] inclusive. You can add scalars to each
+other, invert them, and multiply them by elements. There is a one-to-one
+mapping between scalars and elements. It is trivial to go from a scalar to an
+element, but hard (in the cryptographic sense) to go from element to scalar.
+You can ask for a random scalar, and you can convert scalars to bytes and
+back again.
+
+The form of an 'element' depends upon the group (there are integer-element
+groups, and ECC groups). You can add elements together, invert them
+(scalarmult by -1), and subtract them (invert then add). You can ask for a
+random element (found by choosing a random scalar, then multiplying). You can
+convert elements to bytes and back.
+
+There is a dedicated operation for scalar multiplication of the generator
+(which is known as the 'base point' in ECC groups). This is a one-argument
+function, and is slightly faster than the general two-argument form.
+
+Two final operations are provided. The first produces an 'arbitrary element'
+from a seed. This is somewhat like a random element, but with the additional
+important property that nobody knows what the corresponding scalar is. The
+second takes a password (an arbitrary bytestring) and produces a scalar.
+
+The functions that produce random scalars/elements require an entropy
+function, which is expected to behave like os.urandom. The only reason to not
+use os.urandom is for deterministic unit tests.
+
+    def random_scalar(entropy_f): return scalar
+    def password_to_scalar(bytes): return scalar
+    def scalar_to_bytes(scalar): return bytes
+    def scalar_from_bytes(bytes, allow_wrap): return scalar
+    # If allow_wrap==False, throw exception if scalar is out-of-range. Stored
+    # scalars should always be in-range, but password_to_scalar() needs
+    # allow_wrap==True .
+    def invert_scalar(scalar): return scalar
+
+    def random_element(entropy_f): return element
+    def arbitrary_element(seed=bytes): return element
+    def element_to_bytes(element): return bytes
+    def element_from_bytes(bytes): return element
+    def is_member(element): return bool
+
+    def add(element, element): return element
+    def scalarmult_base(scalar): return element
+    def scalarmult(element, scalar): return element
+"""
+
 class _Element:
     def __init__(self, group, e):
         self._group = group
