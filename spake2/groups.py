@@ -40,9 +40,11 @@ class BaseGroup:
         assert len(_s) >= self.scalar_size_bytes
         self.scalar_hasher = scalar_hasher
         self.g = g # generator of the subgroup
-        # the group's identity element is the generator. That is
+
+    def group_identity(self):
+        # the group's identity element is scalarmult_base(0). That is
         # completely different from the *field*'s identity.
-        self.identity = self.element_class(self, self.g)
+        return self.scalarmult_base(0)
 
     def random_scalar(self, entropy_f):
         exp = unbiased_randrange(0, self.q, entropy_f)

@@ -148,6 +148,7 @@ class Group(unittest.TestCase):
         for g in ALL_GROUPS:
             sb = g.scalarmult_base
             e_zero = sb(0)
+            self.assertElementsEqual(e_zero, g.group_identity())
             e1 = sb(1)
             e2 = sb(2)
             self.assertElementsEqual(e1 + e_zero, e1)
@@ -170,19 +171,22 @@ class Group(unittest.TestCase):
 
     def test_bad_math(self):
         for g in ALL_GROUPS:
-            zero = g.identity
+            zero = g.group_identity()
+            # you cannot multiply two group elements together, only add them
             self.assertRaises(TypeError, lambda: zero * zero)
+            # you cannot add group elements to scalars, you can only multiply
+            # group elements *by* scalars
             self.assertRaises(TypeError, lambda: zero + 1)
             self.assertRaises(TypeError, lambda: zero - 1)
 
     def test_is_member(self):
         for g in ALL_GROUPS:
             fr = PRG(0)
-            self.assertTrue(g.is_member(g.identity))
+            self.assertTrue(g.is_member(g.group_identity()))
             self.assertTrue(g.is_member(g.scalarmult_base(2)))
             self.assertTrue(g.is_member(g.scalarmult_base(3)))
             self.assertTrue(g.is_member(g.random_element(fr)[1]))
-        self.assertFalse(groups.I1024.is_member(groups.I2048.identity))
+        self.assertFalse(groups.I1024.is_member(groups.I2048.group_identity()))
         for g in ALL_INTEGER_GROUPS:
             # we must bypass the normal API to create an element that's
             # marked as being of the right group, but the actual number is
