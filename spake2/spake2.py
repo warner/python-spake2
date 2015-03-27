@@ -84,7 +84,10 @@ class SPAKE2:
         return outbound_side_and_message
 
     def compute_outbound_message(self):
-        message_elem = self.xy_elem + (self.my_blinding() * self.pw_scalar)
+        #message_elem = self.xy_elem + (self.my_blinding() * self.pw_scalar)
+        g = self.params.group
+        message_elem = g.add(self.xy_elem,
+                             g.scalarmult(self.my_blinding(), self.pw_scalar))
         self.outbound_message = message_elem.to_bytes()
 
     def finish(self, inbound_side_and_message):
@@ -103,12 +106,16 @@ class SPAKE2:
             else:
                 raise OffSides("I'm B, but I got a message from B (not A).")
 
-        group = self.params.group
-        inbound_elem = group.element_from_bytes(self.inbound_message)
+        g = self.params.group
+        inbound_elem = g.element_from_bytes(self.inbound_message)
         if inbound_elem.to_bytes() == self.outbound_message:
             raise ReflectionThwarted
-        K_elem = (inbound_elem + (self.my_unblinding() * -self.pw_scalar)
-                  ) * self.xy_exp
+        #K_elem = (inbound_elem + (self.my_unblinding() * -self.pw_scalar)
+        #          ) * self.xy_exp
+        K_elem = g.scalarmult(g.add(inbound_elem,
+                                    g.scalarmult(self.my_unblinding(),
+                                                 -self.pw_scalar)),
+                              self.xy_exp)
         K_bytes = K_elem.to_bytes()
         transcript = b":".join([self.idA, self.idB,
                                 self.X_msg(), self.Y_msg(), K_bytes,
@@ -161,11 +168,11 @@ class SPAKE2:
                    "params= that were used to create the serialized data."
                    "These are different somehow.")
             raise WrongGroupError(err)
-        group = self.params.group
+        g = self.params.group
         self._started = True
         xy_exp_bytes = unhexlify(d["xy_exp"].encode("ascii"))
-        self.xy_exp = group.scalar_from_bytes(xy_exp_bytes, allow_wrap=False)
-        self.xy_elem = group.scalarmult_base(self.xy_exp)
+        self.xy_exp = g.scalar_from_bytes(xy_exp_bytes, allow_wrap=False)
+        self.xy_elem = g.scalarmult_base(self.xy_exp)
         self.compute_outbound_message()
         return self
     @classmethod

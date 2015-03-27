@@ -4,34 +4,15 @@ from .six import integer_types
 from .util import (size_bits, size_bytes, unbiased_randrange,
                    bytes_to_number, number_to_bytes)
 
-class _GroupElement:
+class _Element:
     def __init__(self, group, e):
         self._group = group
         self._e = e
-
-    def __mul__(self, other):
-        if not isinstance(other, integer_types):
-            raise TypeError("GroupElement*N requires N be a scalar")
-        return self._group.scalarmult(self, other)
-
-    def __add__(self, other):
-        if not (isinstance(other, _GroupElement) and
-                other._group is self._group):
-            raise TypeError("GroupElement+X requires X to be another group element")
-        return self._group.add(self, other)
-
-    def __sub__(self, other):
-        if not (isinstance(other, _GroupElement) and
-                other._group is self._group):
-            raise TypeError("GroupElement-X requires X to be another group element")
-        return self._group.add(self, other * -1)
 
     def to_bytes(self):
         return self._group.element_to_bytes(self)
 
 class BaseGroup:
-    element_class = _GroupElement
-
     def __init__(self, q, g, scalar_hasher):
         self.q = q # the subgroup order, used for scalars
         self.scalar_size_bytes = size_bytes(self.q)
@@ -76,7 +57,7 @@ class BaseGroup:
         return i
 
     def scalarmult_base(self, i):
-        e1 = self.element_class(self, self.g)
+        e1 = _Element(self, self.g)
         return self.scalarmult(e1, i)
 
     def invert_scalar(self, i):
@@ -104,8 +85,7 @@ class IntegerGroup(BaseGroup):
         self.element_hasher = element_hasher
 
         # double-check that the generator has the right order
-        gen = self.element_class(self, self.g)
-        assert (gen * self.q)._e == 1
+        assert pow(self.g, self.q, self.p) == 1
 
     def arbitrary_element(self, seed):
         # we do *not* know the discrete log of this one. Nobody should.
@@ -124,7 +104,7 @@ class IntegerGroup(BaseGroup):
         r = (self.p - 1) // self.q
         assert r * self.q == self.p - 1
         h = bytes_to_number(processed_seed) % self.p
-        element = self.element_class(self, pow(h, r, self.p))
+        element = _Element(self, pow(h, r, self.p))
         assert self.is_member(element)
         return element
 
@@ -137,7 +117,7 @@ class IntegerGroup(BaseGroup):
 
     def element_to_bytes(self, e):
         # for sending to other side, and hashing into transcript
-        assert isinstance(e, self.element_class)
+        assert isinstance(e, _Element)
         assert e._group is self
         return number_to_bytes(e._e, self.p)
 
@@ -147,22 +127,26 @@ class IntegerGroup(BaseGroup):
         assert len(b) == self.element_size_bytes
         i = bytes_to_number(b)
         assert 1 <= i < self.p  # Zp* excludes 0
-        e = self.element_class(self, i)
+        e = _Element(self, i)
         assert self.is_member(e)
         return e
 
     def scalarmult(self, e1, i):
-        assert isinstance(e1, self.element_class)
+        if not isinstance(e1, _Element):
+            raise TypeError("E*N requires E be an element")
         assert e1._group is self
-        assert isinstance(i, integer_types)
-        return self.element_class(self, pow(e1._e, i % self.q, self.p))
+        if not isinstance(i, integer_types):
+            raise TypeError("E*N requires N be a scalar")
+        return _Element(self, pow(e1._e, i % self.q, self.p))
 
     def add(self, e1, e2):
-        assert isinstance(e1, self.element_class)
+        if not isinstance(e1, _Element):
+            raise TypeError("E*N requires E be an element")
         assert e1._group is self
-        assert isinstance(e2, self.element_class)
+        if not isinstance(e2, _Element):
+            raise TypeError("E*N requires E be an element")
         assert e2._group is self
-        return self.element_class(self, (e1._e * e2._e) % self.p)
+        return _Element(self, (e1._e * e2._e) % self.p)
 
 
 def sha256(b):
