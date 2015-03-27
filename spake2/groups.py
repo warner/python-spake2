@@ -29,31 +29,16 @@ class _GroupElement:
     def to_bytes(self):
         return self._group.element_to_bytes(self)
 
-class IntegerGroup:
+class BaseGroup:
     element_class = _GroupElement
 
-    def __init__(self, p, q, g, element_hasher, scalar_hasher):
-        # these are the public system parameters
-        self.p = p # the field size
+    def __init__(self, q, scalar_hasher):
         self.q = q # the subgroup order, used for scalars
-        self.g = g # generator of the subgroup
-        self.element_size_bits = size_bits(self.p)
-        self.element_size_bytes = size_bytes(self.p)
         self.scalar_size_bytes = size_bytes(self.q)
-        _e = element_hasher(b"")
-        assert isinstance(_e, bytes)
-        assert len(_e) >= self.element_size_bytes
-        self.element_hasher = element_hasher
         _s = scalar_hasher(b"")
         assert isinstance(_s, bytes)
         assert len(_s) >= self.scalar_size_bytes
         self.scalar_hasher = scalar_hasher
-
-        # double-check that the generator has the right order
-        gen = self.element_class(self, self.g)
-        assert (gen * self.q)._x == 1
-
-        self.identity = self.element_class(self, self.g)
 
     def random_scalar(self, entropy_f):
         exp = unbiased_randrange(0, self.q, entropy_f)
@@ -64,6 +49,60 @@ class IntegerGroup:
         exp = self.random_scalar(entropy_f)
         element = self.scalarmult_base(exp)
         return exp, element
+
+    def scalar_to_bytes(self, i):
+        # both for hashing into transcript, and save/restore of
+        # intermediate state
+        assert isinstance(i, integer_types)
+        assert 0 <= 0 < self.q
+        return number_to_bytes(i, self.q)
+
+    def scalar_from_bytes(self, b, allow_wrap):
+        # for restore of intermediate state, and password_to_scalar .
+        # Note that encoded scalars are stored locally, and not accepted
+        # from external attackers.
+        assert isinstance(b, bytes)
+        assert len(b) == self.scalar_size_bytes
+        i = bytes_to_number(b)
+        if allow_wrap: # for password_to_scalar
+            i = i % self.q
+        assert 0 <= i < self.q, (0, i, self.q)
+        return i
+
+    def scalarmult_base(self, i):
+        e1 = self.element_class(self, self.g)
+        return self.scalarmult(e1, i)
+
+    def invert_scalar(self, i):
+        assert isinstance(i, integer_types)
+        return (-i) % self.q
+
+    def password_to_scalar(self, pw):
+        assert isinstance(pw, bytes)
+        b = self.scalar_hasher(pw)
+        assert len(b) >= self.scalar_size_bytes
+        # I don't think this needs to be uniform
+        return self.scalar_from_bytes(b[:self.scalar_size_bytes],
+                                      allow_wrap=True)
+
+class IntegerGroup(BaseGroup):
+    def __init__(self, p, q, g, element_hasher, scalar_hasher):
+        BaseGroup.__init__(self, q, scalar_hasher)
+        # these are the public system parameters
+        self.p = p # the field size
+        self.g = g # generator of the subgroup
+        self.element_size_bits = size_bits(self.p)
+        self.element_size_bytes = size_bytes(self.p)
+        _e = element_hasher(b"")
+        assert isinstance(_e, bytes)
+        assert len(_e) >= self.element_size_bytes
+        self.element_hasher = element_hasher
+
+        # double-check that the generator has the right order
+        gen = self.element_class(self, self.g)
+        assert (gen * self.q)._x == 1
+
+        self.identity = self.element_class(self, self.g)
 
     def arbitrary_element(self, seed):
         # we do *not* know the discrete log of this one. Nobody should.
@@ -93,25 +132,6 @@ class IntegerGroup:
             return True
         return False
 
-    def scalar_to_bytes(self, i):
-        # both for hashing into transcript, and save/restore of
-        # intermediate state
-        assert isinstance(i, integer_types)
-        assert 0 <= 0 < self.q
-        return number_to_bytes(i, self.q)
-
-    def scalar_from_bytes(self, b, allow_wrap):
-        # for restore of intermediate state, and password_to_scalar .
-        # Note that encoded scalars are stored locally, and not accepted
-        # from external attackers.
-        assert isinstance(b, bytes)
-        assert len(b) == self.scalar_size_bytes
-        i = bytes_to_number(b)
-        if allow_wrap: # for password_to_scalar
-            i = i % self.q
-        assert 0 <= i < self.q, (0, i, self.q)
-        return i
-
     def element_to_bytes(self, e):
         # for sending to other side, and hashing into transcript
         assert isinstance(e, _GroupElement)
@@ -134,10 +154,6 @@ class IntegerGroup:
         assert isinstance(i, integer_types)
         return self.element_class(self, pow(e1._x, i % self.q, self.p))
 
-    def scalarmult_base(self, i):
-        e1 = self.element_class(self, self.g)
-        return self.scalarmult(e1, i)
-
     def add(self, e1, e2):
         assert isinstance(e1, _GroupElement)
         assert e1._group is self
@@ -145,17 +161,6 @@ class IntegerGroup:
         assert e2._group is self
         return self.element_class(self, (e1._x * e2._x) % self.p)
 
-    def invert_scalar(self, i):
-        assert isinstance(i, integer_types)
-        return (-i) % self.q
-
-    def password_to_scalar(self, pw):
-        assert isinstance(pw, bytes)
-        b = self.scalar_hasher(pw)
-        assert len(b) >= self.scalar_size_bytes
-        # I don't think this needs to be uniform
-        return self.scalar_from_bytes(b[:self.scalar_size_bytes],
-                                      allow_wrap=True)
 
 def sha256(b):
     return hashlib.sha256(b).digest()
