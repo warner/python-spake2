@@ -32,13 +32,17 @@ class _GroupElement:
 class BaseGroup:
     element_class = _GroupElement
 
-    def __init__(self, q, scalar_hasher):
+    def __init__(self, q, g, scalar_hasher):
         self.q = q # the subgroup order, used for scalars
         self.scalar_size_bytes = size_bytes(self.q)
         _s = scalar_hasher(b"")
         assert isinstance(_s, bytes)
         assert len(_s) >= self.scalar_size_bytes
         self.scalar_hasher = scalar_hasher
+        self.g = g # generator of the subgroup
+        # the group's identity element is the generator. That is
+        # completely different from the *field*'s identity.
+        self.identity = self.element_class(self, self.g)
 
     def random_scalar(self, entropy_f):
         exp = unbiased_randrange(0, self.q, entropy_f)
@@ -87,10 +91,9 @@ class BaseGroup:
 
 class IntegerGroup(BaseGroup):
     def __init__(self, p, q, g, element_hasher, scalar_hasher):
-        BaseGroup.__init__(self, q, scalar_hasher)
+        BaseGroup.__init__(self, q, g, scalar_hasher)
         # these are the public system parameters
         self.p = p # the field size
-        self.g = g # generator of the subgroup
         self.element_size_bits = size_bits(self.p)
         self.element_size_bytes = size_bytes(self.p)
         _e = element_hasher(b"")
@@ -101,8 +104,6 @@ class IntegerGroup(BaseGroup):
         # double-check that the generator has the right order
         gen = self.element_class(self, self.g)
         assert (gen * self.q)._e == 1
-
-        self.identity = self.element_class(self, self.g)
 
     def arbitrary_element(self, seed):
         # we do *not* know the discrete log of this one. Nobody should.
