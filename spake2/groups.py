@@ -134,7 +134,7 @@ class IntegerGroup(BaseGroup):
 
     def element_to_bytes(self, e):
         # for sending to other side, and hashing into transcript
-        assert isinstance(e, _GroupElement)
+        assert isinstance(e, self.element_class)
         assert e._group is self
         return number_to_bytes(e._e, self.p)
 
@@ -149,15 +149,15 @@ class IntegerGroup(BaseGroup):
         return e
 
     def scalarmult(self, e1, i):
-        assert isinstance(e1, _GroupElement)
+        assert isinstance(e1, self.element_class)
         assert e1._group is self
         assert isinstance(i, integer_types)
         return self.element_class(self, pow(e1._e, i % self.q, self.p))
 
     def add(self, e1, e2):
-        assert isinstance(e1, _GroupElement)
+        assert isinstance(e1, self.element_class)
         assert e1._group is self
-        assert isinstance(e2, _GroupElement)
+        assert isinstance(e2, self.element_class)
         assert e2._group is self
         return self.element_class(self, (e1._e * e2._e) % self.p)
 
