@@ -73,9 +73,9 @@ class SPAKE2:
             raise OnlyCallStartOnce("start() can only be called once")
         self._started = True
 
-        group = self.params.group
-        self.xy_exp = group.random_scalar(self.entropy_f)
-        self.xy_elem = group.scalarmult_base(self.xy_exp)
+        g = self.params.group
+        self.xy_scalar = g.random_scalar(self.entropy_f)
+        self.xy_elem = g.Base.scalarmult(self.xy_scalar)
         self.compute_outbound_message()
         # Guard against both sides using the same side= by adding a side byte
         # to the message. This is not included in the transcript hash at the
@@ -85,9 +85,8 @@ class SPAKE2:
 
     def compute_outbound_message(self):
         #message_elem = self.xy_elem + (self.my_blinding() * self.pw_scalar)
-        g = self.params.group
-        message_elem = g.add(self.xy_elem,
-                             g.scalarmult(self.my_blinding(), self.pw_scalar))
+        pw_blinding = self.my_blinding().scalarmult(self.pw_scalar)
+        message_elem = self.xy_elem.add(pw_blinding)
         self.outbound_message = message_elem.to_bytes()
 
     def finish(self, inbound_side_and_message):
@@ -107,15 +106,13 @@ class SPAKE2:
                 raise OffSides("I'm B, but I got a message from B (not A).")
 
         g = self.params.group
-        inbound_elem = g.element_from_bytes(self.inbound_message)
+        inbound_elem = g.bytes_to_element(self.inbound_message)
         if inbound_elem.to_bytes() == self.outbound_message:
             raise ReflectionThwarted
         #K_elem = (inbound_elem + (self.my_unblinding() * -self.pw_scalar)
-        #          ) * self.xy_exp
-        K_elem = g.scalarmult(g.add(inbound_elem,
-                                    g.scalarmult(self.my_unblinding(),
-                                                 -self.pw_scalar)),
-                              self.xy_exp)
+        #          ) * self.xy_scalar
+        pw_unblinding = self.my_unblinding().scalarmult(-self.pw_scalar)
+        K_elem = inbound_elem.add(pw_unblinding).scalarmult(self.xy_scalar)
         K_bytes = K_elem.to_bytes()
         transcript = b":".join([self.idA, self.idB,
                                 self.X_msg(), self.Y_msg(), K_bytes,
@@ -130,22 +127,22 @@ class SPAKE2:
         # ones upon restore. Otherwise the failure mode is silent key
         # disagreement. Any changes to the group or the M/N seeds should
         # cause this to change.
-        group = self.params.group
-        pieces = [group.arbitrary_element(b"").to_bytes(),
-                  group.scalar_to_bytes(group.password_to_scalar(b"")),
+        g = self.params.group
+        pieces = [g.arbitrary_element(b"").to_bytes(),
+                  g.scalar_to_bytes(g.password_to_scalar(b"")),
                   self.params.M.to_bytes(),
                   self.params.N.to_bytes(),
                   ]
         return sha256(b"".join(pieces)).hexdigest()
 
     def _serialize_to_dict(self):
-        group = self.params.group
+        g = self.params.group
         d = {"hashed_params": self.hash_params(),
              "side": self.side.decode("ascii"),
              "idA": hexlify(self.idA).decode("ascii"),
              "idB": hexlify(self.idB).decode("ascii"),
              "password": hexlify(self.pw).decode("ascii"),
-             "xy_exp": hexlify(group.scalar_to_bytes(self.xy_exp)).decode("ascii"),
+             "xy_scalar": hexlify(g.scalar_to_bytes(self.xy_scalar)).decode("ascii"),
              }
         return d
 
@@ -170,9 +167,9 @@ class SPAKE2:
             raise WrongGroupError(err)
         g = self.params.group
         self._started = True
-        xy_exp_bytes = unhexlify(d["xy_exp"].encode("ascii"))
-        self.xy_exp = g.scalar_from_bytes(xy_exp_bytes, allow_wrap=False)
-        self.xy_elem = g.scalarmult_base(self.xy_exp)
+        xy_scalar_bytes = unhexlify(d["xy_scalar"].encode("ascii"))
+        self.xy_scalar = g.bytes_to_scalar(xy_scalar_bytes)
+        self.xy_elem = g.Base.scalarmult(self.xy_scalar)
         self.compute_outbound_message()
         return self
     @classmethod

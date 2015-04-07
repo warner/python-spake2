@@ -27,6 +27,10 @@ class PRG:
             for i in range(len(block)):
                 yield block[i:i+1]
 
+def random_element(g, entropy_f):
+    s = g.random_scalar(entropy_f)
+    return s, g.Base.scalarmult(s)
+
 class Utils(unittest.TestCase):
     def test_binsize(self):
         def sizebb(maxval):
@@ -133,122 +137,117 @@ class Group(unittest.TestCase):
         for g in ALL_GROUPS:
             fr = PRG(0)
             i = g.random_scalar(entropy_f=fr)
-            self.assertTrue(0 <= i < g.q)
+            self.assertTrue(0 <= i < g.order())
             b = g.scalar_to_bytes(i)
             self.assertEqual(len(b), g.scalar_size_bytes)
-            self.assertEqual(i, g.scalar_from_bytes(b, False))
-            i,e = g.random_element(entropy_f=fr)
+            self.assertEqual(i, g.bytes_to_scalar(b))
+            e = g.Base.scalarmult(i)
             self.assertEqual(len(e.to_bytes()), g.element_size_bytes)
-            self.assertEqual(g.scalarmult_base(i).to_bytes(), e.to_bytes())
             e = g.arbitrary_element(b"")
             self.assertEqual(len(e.to_bytes()), g.element_size_bytes)
-            self.assertElementsEqual(e, g.element_from_bytes(e.to_bytes()))
+            self.assertElementsEqual(e, g.bytes_to_element(e.to_bytes()))
 
     def test_math(self):
         for g in ALL_GROUPS:
-            sb = g.scalarmult_base
-            add = g.add
-            smul = g.scalarmult
+            sb = g.Base.scalarmult
             e0 = sb(0)
-            self.assertElementsEqual(e0, g.group_identity())
+            self.assertElementsEqual(e0, g.Zero)
             e1 = sb(1)
             e2 = sb(2)
-            self.assertElementsEqual(add(e1, e0), e1)
-            self.assertElementsEqual(add(e1, e1), smul(e1, 2))
-            self.assertElementsEqual(smul(e1, 2), e2)
-            self.assertElementsEqual(add(e1, e2), add(e2, e1))
-            e_m1 = sb(g.q-1)
+            self.assertElementsEqual(e1.add(e0), e1)
+            self.assertElementsEqual(e1.add(e1), e1.scalarmult(2))
+            self.assertElementsEqual(e1.scalarmult(2), e2)
+            self.assertElementsEqual(e1.add(e2), e2.add(e1))
+            e_m1 = sb(g.order()-1)
             self.assertElementsEqual(e_m1, sb(-1))
-            self.assertElementsEqual(add(e_m1, e1), e0)
+            self.assertElementsEqual(e_m1.add(e1), e0)
             e3 = sb(3)
             e4 = sb(4)
             e5 = sb(5)
-            self.assertElementsEqual(add(e2, e3), add(e1, e4))
+            self.assertElementsEqual(e2.add(e3), e1.add(e4))
             #self.assertElementsEqual(e5 - e3, e2)
-            self.assertElementsEqual(smul(e1, g.q), e0)
-            self.assertElementsEqual(smul(e2, g.q), e0)
-            self.assertElementsEqual(smul(e3, g.q), e0)
-            self.assertElementsEqual(smul(e4, g.q), e0)
-            self.assertElementsEqual(smul(e5, g.q), e0)
+            self.assertElementsEqual(e1.scalarmult(g.order()), e0)
+            self.assertElementsEqual(e2.scalarmult(g.order()), e0)
+            self.assertElementsEqual(e3.scalarmult(g.order()), e0)
+            self.assertElementsEqual(e4.scalarmult(g.order()), e0)
+            self.assertElementsEqual(e5.scalarmult(g.order()), e0)
 
     def test_bad_math(self):
         for g in ALL_GROUPS:
-            zero = g.group_identity()
+            base = g.Base
             # you cannot multiply two group elements together, only add them
-            self.assertRaises(TypeError, lambda: g.scalarmult(zero, zero))
+            self.assertRaises(TypeError, lambda: base.scalarmult(base))
             # you cannot add group elements to scalars, you can only multiply
             # group elements *by* scalars
-            self.assertRaises(TypeError, lambda: g.add(zero, 1))
-            self.assertRaises(TypeError, lambda: g.add(zero, -1))
+            self.assertRaises(TypeError, lambda: base.add(1))
+            self.assertRaises(TypeError, lambda: base.add(-1))
 
-    def test_is_member(self):
+    def test_from_bytes(self):
         for g in ALL_GROUPS:
             fr = PRG(0)
-            self.assertTrue(g.is_member(g.group_identity()))
-            self.assertTrue(g.is_member(g.scalarmult_base(2)))
-            self.assertTrue(g.is_member(g.scalarmult_base(3)))
-            self.assertTrue(g.is_member(g.random_element(fr)[1]))
-        self.assertFalse(groups.I1024.is_member(groups.I2048.group_identity()))
+            e = g.Base
+            self.assertElementsEqual(g.bytes_to_element(e.to_bytes()), e)
+            e = g.Base.scalarmult(2)
+            self.assertElementsEqual(g.bytes_to_element(e.to_bytes()), e)
+            e = g.Base.scalarmult(g.random_scalar(fr))
+            self.assertElementsEqual(g.bytes_to_element(e.to_bytes()), e)
+
+        self.assertFalse(groups.I1024._is_member(groups.I2048.Zero))
         for g in ALL_INTEGER_GROUPS:
             # we must bypass the normal API to create an element that's
             # marked as being of the right group, but the actual number is
             # not in the subgroup
-            self.assertFalse(g.is_member(groups._Element(g, 0)))
-            self.assertFalse(g.is_member(groups._Element(g, 2)))
+            s = groups.number_to_bytes(0, g.p)
+            self.assertRaises(ValueError, g.bytes_to_element, s)
+            s = groups.number_to_bytes(2, g.p)
+            self.assertRaises(ValueError, g.bytes_to_element, s)
 
     def test_arbitrary_element(self):
         for g in ALL_GROUPS:
             gx = g.arbitrary_element(b"")
-            # arbitrary_element once had a bug, it returned elements that were
-            # not in the subgroup. Test against that.
-            self.assertTrue(g.is_member(gx))
-            smul = g.scalarmult
-            self.assertElementsEqual(smul(gx, -2), smul(smul(gx,2), -1))
+            self.assertElementsEqual(gx.scalarmult(-2),
+                                     gx.scalarmult(2).scalarmult(-1))
             gy = g.arbitrary_element(b"2")
             self.assertElementsNotEqual(gx, gy)
 
     def test_blinding(self):
         for g in ALL_GROUPS:
             fr = PRG(0)
-            _, pubkey = g.random_element(fr)
-            _, U = g.random_element(fr)
+            _, pubkey = random_element(g, fr)
+            _, U = random_element(g, fr)
             pw = g.random_scalar(fr)
-            add = g.add
-            smul = g.scalarmult
             # X+U*pw -U*pw == X
-            blinding_factor = smul(U, pw)
-            blinded_pubkey = add(pubkey, blinding_factor)
-            inverse_pw = g.invert_scalar(pw)
-            inverse_blinding_factor = smul(U, inverse_pw)
-            self.assertElementsEqual(inverse_blinding_factor, smul(U, -pw))
-            self.assertElementsEqual(smul(U, -pw), smul(smul(U, pw), -1))
+            blinding_factor = U.scalarmult(pw)
+            blinded_pubkey = pubkey.add(blinding_factor)
+            inverse_pw = (-pw) % g.order()
+            inverse_blinding_factor = U.scalarmult(inverse_pw)
+            self.assertElementsEqual(inverse_blinding_factor, U.scalarmult(-pw))
+            self.assertElementsEqual(U.scalarmult(-pw),
+                                     U.scalarmult(pw).scalarmult(-1))
             self.assertElementsEqual(inverse_blinding_factor,
-                                     smul(blinding_factor, -1))
-            unblinded_pubkey = add(blinded_pubkey, inverse_blinding_factor)
+                                     blinding_factor.scalarmult(-1))
+            unblinded_pubkey = blinded_pubkey.add(inverse_blinding_factor)
             self.assertElementsEqual(pubkey, unblinded_pubkey)
 
     def test_password(self):
         for g in ALL_GROUPS:
             i = g.password_to_scalar(b"")
-            self.assertTrue(0 <= i < g.q)
+            self.assertTrue(0 <= i < g.order())
 
     def test_math_trivial(self):
         g = I23
-        e1 = g.scalarmult_base(1)
-        e2 = g.scalarmult_base(2)
-        e3 = g.scalarmult_base(3)
-        e4 = g.scalarmult_base(4)
-        e5 = g.scalarmult_base(5)
-        e6 = g.scalarmult_base(6)
+        e1 = g.Base.scalarmult(1)
+        e2 = g.Base.scalarmult(2)
+        e3 = g.Base.scalarmult(3)
+        e4 = g.Base.scalarmult(4)
+        e5 = g.Base.scalarmult(5)
+        e6 = g.Base.scalarmult(6)
         self.assertEqual([e1._e, e2._e, e3._e, e4._e, e5._e, e6._e],
                          [2, 4, 8, 16, 9, 18])
-        add = g.add
-        smul = g.scalarmult
-        self.assertElementsEqual(add(e1, e1), smul(e1, 2))
-        self.assertElementsEqual(smul(e1, 2), e2)
-        self.assertElementsEqual(add(e1, e2), add(e2, e1))
-        self.assertElementsEqual(add(e2, e3), add(e1, e4))
-        #self.assertElementsEqual(e5 - e3, e2)
+        self.assertElementsEqual(e1.add(e1), e1.scalarmult(2))
+        self.assertElementsEqual(e1.scalarmult(2), e2)
+        self.assertElementsEqual(e1.add(e2), e2.add(e1))
+        self.assertElementsEqual(e2.add(e3), e1.add(e4))
 
 I23 = groups.IntegerGroup(p=23, q=11, g=2,
                           element_hasher=groups.sha256,

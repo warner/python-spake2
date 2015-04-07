@@ -31,9 +31,8 @@ groups, and ECC groups). You can add elements together, invert them
 random element (found by choosing a random scalar, then multiplying). You can
 convert elements to bytes and back.
 
-There is a dedicated operation for scalar multiplication of the generator
-(which is known as the 'base point' in ECC groups). This is a one-argument
-function, and is slightly faster than the general two-argument form.
+There is a distinguished element called 'Base', which is the generator
+(or 'base point' in ECC groups).
 
 Two final operations are provided. The first produces an 'arbitrary element'
 from a seed. This is somewhat like a random element, but with the additional
@@ -44,97 +43,49 @@ The functions that produce random scalars/elements require an entropy
 function, which is expected to behave like os.urandom. The only reason to not
 use os.urandom is for deterministic unit tests.
 
-    def random_scalar(entropy_f): return scalar
-    def password_to_scalar(bytes): return scalar
-    def scalar_to_bytes(scalar): return bytes
-    def scalar_from_bytes(bytes, allow_wrap): return scalar
-    # If allow_wrap==False, throw exception if scalar is out-of-range. Stored
-    # scalars should always be in-range, but password_to_scalar() needs
-    # allow_wrap==True .
-    def invert_scalar(scalar): return scalar
+    g = I2048Group # or Ed25519Group
 
-    def random_element(entropy_f): return element
-    def arbitrary_element(seed=bytes): return element
-    def element_to_bytes(element): return bytes
-    def element_from_bytes(bytes): return element
-    def is_member(element): return bool
+    s = g.random_scalar(entropy_f)
+    s = g.bytes_to_scalar(bytes)
+    bytes = g.scalar_to_bytes()
+    s = g.password_to_scalar(password)
 
-    def add(element, element): return element
-    def scalarmult_base(scalar): return element
-    def scalarmult(element, scalar): return element
+    e = g.bytes_to_element(bytes)
+    e = g.arbitrary_element(seed)
+    e = g.Base # this is an Element too, with all the methods below
+
+    e3 = e1.add(e2)
+    e3 = e1.scalarmult(s) # takes int, positive or negative
+    bytes = e.to_bytes()
+    # equality tests work: e1 == e2, e1 != e2
 """
+
+
 
 class _Element:
     def __init__(self, group, e):
         self._group = group
         self._e = e
 
-    def to_bytes(self):
-        return self._group.element_to_bytes(self)
+    def add(self, other):
+        return self._group._add(self, other)
+    def scalarmult(self, s):
+        return self._group._scalarmult(self, s)
 
-class BaseGroup:
-    def __init__(self, q, g, scalar_hasher):
+    def to_bytes(self):
+        return self._group._element_to_bytes(self)
+
+class IntegerGroup:
+    def __init__(self, p, q, g, element_hasher, scalar_hasher):
         self.q = q # the subgroup order, used for scalars
         self.scalar_size_bytes = size_bytes(self.q)
         _s = scalar_hasher(b"")
         assert isinstance(_s, bytes)
         assert len(_s) >= self.scalar_size_bytes
         self.scalar_hasher = scalar_hasher
-        self.g = g # generator of the subgroup
+        self.Zero = _Element(self, 1)
+        self.Base = _Element(self, g) # generator of the subgroup
 
-    def group_identity(self):
-        # the group's identity element is scalarmult_base(0). That is
-        # completely different from the *field*'s identity.
-        return self.scalarmult_base(0)
-
-    def random_scalar(self, entropy_f):
-        exp = unbiased_randrange(0, self.q, entropy_f)
-        return exp
-
-    def random_element(self, entropy_f):
-        # we know the discrete log of this value
-        exp = self.random_scalar(entropy_f)
-        element = self.scalarmult_base(exp)
-        return exp, element
-
-    def scalar_to_bytes(self, i):
-        # both for hashing into transcript, and save/restore of
-        # intermediate state
-        assert isinstance(i, integer_types)
-        assert 0 <= 0 < self.q
-        return number_to_bytes(i, self.q)
-
-    def scalar_from_bytes(self, b, allow_wrap):
-        # for restore of intermediate state, and password_to_scalar .
-        # Note that encoded scalars are stored locally, and not accepted
-        # from external attackers.
-        assert isinstance(b, bytes)
-        assert len(b) == self.scalar_size_bytes
-        i = bytes_to_number(b)
-        if allow_wrap: # for password_to_scalar
-            i = i % self.q
-        assert 0 <= i < self.q, (0, i, self.q)
-        return i
-
-    def scalarmult_base(self, i):
-        e1 = _Element(self, self.g)
-        return self.scalarmult(e1, i)
-
-    def invert_scalar(self, i):
-        assert isinstance(i, integer_types)
-        return (-i) % self.q
-
-    def password_to_scalar(self, pw):
-        assert isinstance(pw, bytes)
-        b = self.scalar_hasher(pw)
-        assert len(b) >= self.scalar_size_bytes
-        # I don't think this needs to be uniform
-        return self.scalar_from_bytes(b[:self.scalar_size_bytes],
-                                      allow_wrap=True)
-
-class IntegerGroup(BaseGroup):
-    def __init__(self, p, q, g, element_hasher, scalar_hasher):
-        BaseGroup.__init__(self, q, g, scalar_hasher)
         # these are the public system parameters
         self.p = p # the field size
         self.element_size_bits = size_bits(self.p)
@@ -145,7 +96,38 @@ class IntegerGroup(BaseGroup):
         self.element_hasher = element_hasher
 
         # double-check that the generator has the right order
-        assert pow(self.g, self.q, self.p) == 1
+        assert pow(g, self.q, self.p) == 1
+
+    def order(self):
+        return self.q
+
+    def random_scalar(self, entropy_f):
+        return unbiased_randrange(0, self.q, entropy_f)
+
+    def scalar_to_bytes(self, i):
+        # both for hashing into transcript, and save/restore of
+        # intermediate state
+        assert isinstance(i, integer_types)
+        assert 0 <= 0 < self.q
+        return number_to_bytes(i, self.q)
+
+    def bytes_to_scalar(self, b):
+        # for restore of intermediate state
+        assert isinstance(b, bytes)
+        assert len(b) == self.scalar_size_bytes
+        i = bytes_to_number(b)
+        assert 0 <= i < self.q, (0, i, self.q)
+        return i
+
+    def password_to_scalar(self, pw):
+        assert isinstance(pw, bytes)
+        # the oversized hash reduces bias in the result, so
+        # uniformly-random passwords give nearly-uniform scalars
+        oversized = hashlib.sha512(pw).digest()
+        assert len(oversized) >= self.scalar_size_bytes
+        i = bytes_to_number(oversized)
+        return i % self.q
+
 
     def arbitrary_element(self, seed):
         # we do *not* know the discrete log of this one. Nobody should.
@@ -165,33 +147,35 @@ class IntegerGroup(BaseGroup):
         assert r * self.q == self.p - 1
         h = bytes_to_number(processed_seed) % self.p
         element = _Element(self, pow(h, r, self.p))
-        assert self.is_member(element)
+        assert self._is_member(element)
         return element
 
-    def is_member(self, e):
+    def _is_member(self, e):
         if not e._group is self:
             return False
         if pow(e._e, self.q, self.p) == 1:
             return True
         return False
 
-    def element_to_bytes(self, e):
+    def _element_to_bytes(self, e):
         # for sending to other side, and hashing into transcript
         assert isinstance(e, _Element)
         assert e._group is self
         return number_to_bytes(e._e, self.p)
 
-    def element_from_bytes(self, b):
+    def bytes_to_element(self, b):
         # for receiving from other side: test group membership here
         assert isinstance(b, bytes)
         assert len(b) == self.element_size_bytes
         i = bytes_to_number(b)
-        assert 1 <= i < self.p  # Zp* excludes 0
+        if i <= 0 or i >= self.p:   # Zp* excludes 0
+            raise ValueError("alleged element not in the field")
         e = _Element(self, i)
-        assert self.is_member(e)
+        if not self._is_member(e):
+            raise ValueError("element is not in the right group")
         return e
 
-    def scalarmult(self, e1, i):
+    def _scalarmult(self, e1, i):
         if not isinstance(e1, _Element):
             raise TypeError("E*N requires E be an element")
         assert e1._group is self
@@ -199,7 +183,7 @@ class IntegerGroup(BaseGroup):
             raise TypeError("E*N requires N be a scalar")
         return _Element(self, pow(e1._e, i % self.q, self.p))
 
-    def add(self, e1, e2):
+    def _add(self, e1, e2):
         if not isinstance(e1, _Element):
             raise TypeError("E*N requires E be an element")
         assert e1._group is self
