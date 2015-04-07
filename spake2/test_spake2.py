@@ -1,15 +1,15 @@
 
 import unittest
-from . import spake2, util, groups, params, six
+from . import spake2, util, groups, params, six, ed25519_group
 from .spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
 from binascii import hexlify
 from hashlib import sha256
 from itertools import count
 
 ALL_INTEGER_GROUPS = [groups.I1024, groups.I2048, groups.I3072]
-ALL_GROUPS = ALL_INTEGER_GROUPS
+ALL_GROUPS = ALL_INTEGER_GROUPS + [ed25519_group.Ed25519Group]
 ALL_INTEGER_PARAMS = [params.Params1024, params.Params2048, params.Params3072]
-ALL_PARAMS = ALL_INTEGER_PARAMS
+ALL_PARAMS = ALL_INTEGER_PARAMS + [params.ParamsEd25519]
 
 class PRG:
     # this returns a callable which, when invoked with an integer N, will

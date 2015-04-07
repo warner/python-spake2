@@ -1,5 +1,6 @@
 
 from .groups import I1024, I2048, I3072
+from .ed25519_group import Ed25519Group
 
 # M and N are defined as "randomly chosen elements of the group". It is
 # important that nobody knows their discrete log (if your
@@ -23,3 +24,5 @@ class Params:
 Params1024 = Params(I1024)
 Params2048 = Params(I2048)
 Params3072 = Params(I3072)
+
+ParamsEd25519 = Params(Ed25519Group)
