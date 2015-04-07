@@ -1,5 +1,5 @@
 
-import json
+import os, json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
 from .params import Params, Params2048
@@ -51,7 +51,7 @@ class SPAKE2:
     side = None # set by the subclass
 
     def __init__(self, password, idA=b"", idB=b"",
-                 params=DefaultParams, entropy_f=None):
+                 params=DefaultParams, entropy_f=os.urandom):
         assert isinstance(password, bytes)
         self.pw = password
         self.pw_scalar = params.group.password_to_scalar(password)
@@ -198,7 +198,7 @@ class SPAKE2_B(SPAKE2):
 
 class SPAKE2_Symmetric:
     def __init__(self, password, idA=b"", idB=b"",
-                 params=DefaultParams, entropy_f=None):
+                 params=DefaultParams, entropy_f=os.urandom):
         self.pw = password
         self.sA = SPAKE2_A(password, idA, idB, params, entropy_f)
         self.sB = SPAKE2_B(password, idA, idB, params, entropy_f)
