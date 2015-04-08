@@ -48,8 +48,8 @@ class Speed(Test):
                 return "%.1fms" % (t*1e3)
             return "%.1fus" % (t*1e6)
 
-        for params in ["Params1024", "Params2048", "Params3072",
-                       "ParamsEd25519"]:
+        for params in ["ParamsEd25519",
+                       "Params1024", "Params2048", "Params3072"]:
             S1 = "from spake2 import SPAKE2_A, SPAKE2_B, %s" % params
             S2 = "sB = SPAKE2_B(b'password', params=%s)" % params
             S3 = "mB = sB.start()"
@@ -66,7 +66,7 @@ class Speed(Test):
             s = SPAKE2_A(b"pw", params=p)
             msglen = len(s.start())
             statelen = len(s.serialize())
-            print("%10s: msglen=%3d, statelen=%3d, full=%s, start=%s"
+            print("%-13s: msglen=%3d, statelen=%3d, full=%6s, start=%6s"
                   % (params, msglen, statelen, abbrev(full), abbrev(start)))
 cmdclass["speed"] = Speed
 
