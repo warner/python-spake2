@@ -1,6 +1,12 @@
 
 User-Visible Changes in python-spake2
 
+* Release 0.2 (08-Apr-2015)
+
+Use Ed25519 group/parameters by default (improves speed, security, and
+message size). Note that both sides must use the same parameter set for
+compatibility.
+
 * Release 0.1 (13-Feb-2015)
 
 Initial release. Includes SPAKE2_A/SPAKE2_B, and SPAKE2_Symmetric. Provides
