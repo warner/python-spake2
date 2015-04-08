@@ -2,12 +2,10 @@
 import os, json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
-from .params import Params, Params2048
+from .params import Params, ParamsEd25519
 from .util import xor_keys
 
-# TODO: switch to ECC
-
-DefaultParams = Params2048
+DefaultParams = ParamsEd25519
 
 class SPAKEError(Exception):
     pass

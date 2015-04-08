@@ -24,9 +24,9 @@ The protocol requires the exchange of one pair of messages, so only one round
 trip is necessary to establish the session key. If key-confirmation is
 necessary, that will require a second round trip.
 
-All messages are bytestrings. For the default security level (using a
-2048-bit modulus, roughly equivalent to an 112-bit symmetric key), the
-message is 257 bytes long.
+All messages are bytestrings. For the default security level (using the
+Ed25519 elliptic curve, roughly equivalent to an 128-bit symmetric key), the
+message is 33 bytes long.
 
 ## What Is It Good For?
 
@@ -235,8 +235,8 @@ def second(inbound_message):
 The instance data is highly sensitive and includes the password: protect it
 carefully. An eavesdropper who learns the instance state from just one side
 will be able to reconstruct the shared key. `data` is a printable ASCII
-bytestring (the JSON-encoding of a small dictionary). For `Params2048`, the
-serialized data requires 210 bytes.
+bytestring (the JSON-encoding of a small dictionary). For `ParamsEd25519`,
+the serialized data requires 221 bytes.
 
 Note that you must restore the instance with the same side (`SPAKE2_A` vs
 `SPAKE2_B`) and `params=` (if overridden) as you used when first creating it.
@@ -257,9 +257,14 @@ SPAKE2's strength against cryptographic attacks depends upon the parameters
 you use, which also influence the execution speed. Use the strongest
 parameters your time budget can afford.
 
-The library comes with three parameter sets in the `spake2.params` module:
-`Params1024`, `Params2048` (the default), and `Params3072`, offering 80-bit,
-112-bit, and 128-bit security levels respectively.
+The library defaults to the fast and secure Ed25519 elliptic-curve group
+through the `ParamsEd25519` parameter set. This offers a 128-bit security
+level, small messages, and fairly fast execution speed.
+
+If for some reason you don't care for elliptic curves, the `spake2.params`
+module includes three integer-group parameter sets: `Params1024`,
+`Params2048`, `Params3072`, offering 80-bit, 112-bit, and 128-bit security
+levels respectively.
 
 To override the default parameters, include a `params=` value when you create
 the SPAKE2 instance. Both sides must use the same parameters.
@@ -276,8 +281,9 @@ restore it with the same parameters, otherwise you will get an exception:
 s = SPAKE2_A.from_serialized(data, params=params.Params3072)
 ```
 
-This library does not currently protect against timing attacks. Do not allow
-attackers to measure how long it takes you to create or respond to a message.
+This library is very much *not* constant-time, and does not protect against
+timing attacks. Do not allow attackers to measure how long it takes you to
+create or respond to a message.
 
 This library depends upon a strong source of random numbers. Do not use it on
 a system where os.urandom() is weak.
@@ -288,21 +294,21 @@ To run the built-in speed tests, just run `python setup.py speed`.
 
 SPAKE2 consists of two phases, separated by a single message exchange. The
 time these phases take is split roughly 40/60. On my 2012 Mac Mini (2.6GHz
-Core-i7), the default `Params2048` security level takes about 20ms to
-complete both phases. Larger parameter sets are slower and require larger
-messages (and their serialized state is larger), but are more secure. The
-complete output of `python setup.py speed` is:
+Core-i7), the default `ParamsEd25519` security level takes about 14ms to
+complete both phases. For the integer groups, larger groups are slower and
+require larger messages (and their serialized state is larger), but are more
+secure. The complete output of `python setup.py speed` is:
 
-    Params1024: msglen=129, statelen=194, full=4.3ms, start=1.7ms
-    Params2048: msglen=257, statelen=210, full=19.7ms, start=8.0ms
-    Params3072: msglen=385, statelen=218, full=39.1ms, start=15.6ms
+    ParamsEd25519: msglen= 33, statelen=221, full=13.9ms, start= 5.5ms
+    Params1024   : msglen=129, statelen=197, full= 4.3ms, start= 1.8ms
+    Params2048   : msglen=257, statelen=213, full=20.8ms, start= 8.5ms
+    Params3072   : msglen=385, statelen=221, full=41.5ms, start=16.5ms
 
-A slower CPU (1.8GHz Intel Atom) takes about 8x as long (32ms/157ms/328ms).
+A slower CPU (1.8GHz Intel Atom) takes about 8x as long (76/32/157/322ms).
 
 This library uses only Python. A version which used C speedups for the large
 modular multiplication operations would probably be an order of magnitude
-faster. A future release will include a pure-python elliptic-curve group
-(Ed25519) for higher security and speed.
+faster.
 
 ## Testing
 
@@ -318,6 +324,10 @@ The protocol was described as "PAKE2" in ["cryptobook"] [2] from Dan Boneh
 and Victor Shoup. This is a form of "SPAKE2", defined by Abdalla and
 Pointcheval at [RSA 2005] [3]. Additional recommendations for groups and
 distinguished elements were published in [Ladd's IETF draft] [4].
+
+The Ed25519 implementation uses code adapted from Daniel Bernstein (djb),
+Matthew Dempsky, Daniel Holth, Ron Garret, with further optimizations by
+Brian Warner[5].
 
 The Boneh/Shoup chapter that defines PAKE2 also defines an augmented variant
 named "PAKE2+", which changes one side (typically a server) to record a
@@ -335,3 +345,4 @@ Brian Warner first wrote this Python version in July 2010.
 [2]: http://crypto.stanford.edu/~dabo/cryptobook/  "cryptobook"
 [3]: http://www.di.ens.fr/~pointche/Documents/Papers/2005_rsa.pdf "RSA 2005"
 [4]: https://tools.ietf.org/html/draft-ladd-spake2-01 "Ladd's IETF draft"
+[5]: https://github.com/warner/python-pure25519

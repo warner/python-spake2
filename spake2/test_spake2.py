@@ -297,9 +297,9 @@ class Parameters(unittest.TestCase):
             self.assertEqual(len(kA), len(sha256().digest()))
             self.assertEqual(len(kB), len(sha256().digest()))
 
-    def test_default_is_2048(self):
+    def test_default_is_ed25519(self):
         pw = b"password"
-        sA,sB = SPAKE2_A(pw, params=params.Params2048), SPAKE2_B(pw)
+        sA,sB = SPAKE2_A(pw, params=params.ParamsEd25519), SPAKE2_B(pw)
         m1A,m1B = sA.start(), sB.start()
         kA,kB = sA.finish(m1B), sB.finish(m1A)
         self.assertEqual(hexlify(kA), hexlify(kB))
