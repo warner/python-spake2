@@ -208,9 +208,9 @@ def hash3072(b):
                      sha512(b"4:"+b), sha512(b"5:"+b)])
 
 
-# The original J-PAKE demo (java) code,
-# http://haofeng66.googlepages.com/JPAKEDemo.java , recommended using groups
-# from this NIST document:
+# This 1024-bit group originally came from the J-PAKE demo code,
+# http://haofeng66.googlepages.com/JPAKEDemo.java . That java code
+# recommended these 2048 and 3072 bit groups from this NIST document:
 # http://csrc.nist.gov/groups/ST/toolkit/documents/Examples/DSA2_All.pdf
 
 # L=1024, N=160
