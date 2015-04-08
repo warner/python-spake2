@@ -327,7 +327,8 @@ distinguished elements were published in [Ladd's IETF draft] [4].
 
 The Ed25519 implementation uses code adapted from Daniel Bernstein (djb),
 Matthew Dempsky, Daniel Holth, Ron Garret, with further optimizations by
-Brian Warner[5].
+Brian Warner[5]. The "arbitrary element" computation, which must be the same
+for both participants, is from python-pure25519 version 0.5.
 
 The Boneh/Shoup chapter that defines PAKE2 also defines an augmented variant
 named "PAKE2+", which changes one side (typically a server) to record a
