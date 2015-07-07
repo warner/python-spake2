@@ -251,6 +251,12 @@ state as soon as the incoming message is processed. SPAKE2 has internal
 checks to throw exceptions when instances are used multiple times, but the
 serialize/restore process can bypass those checks, so use with care.
 
+Database-backed applications should store the outbound message (`p.start()`)
+in the DB next to the serialized SPAKE2 state, so they can re-send the same
+message if the application crashes before it has been successfully delivered.
+`p.start()` cannot be called on the instance that `.from_serialized()`
+produces.
+
 ## Security
 
 SPAKE2's strength against cryptographic attacks depends upon the parameters
