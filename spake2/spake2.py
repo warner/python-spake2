@@ -3,7 +3,6 @@ import os, json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
 from .params import Params, ParamsEd25519
-from .util import xor_keys
 
 DefaultParams = ParamsEd25519
 
@@ -29,6 +28,7 @@ class ReflectionThwarted(SPAKEError):
 
 SideA = b"A"
 SideB = b"B"
+SideSymmetric = b"S"
 
 # x = random(Zp)
 # X = scalarmult(g, x)
@@ -48,16 +48,11 @@ class SPAKE2:
 
     side = None # set by the subclass
 
-    def __init__(self, password, idA=b"", idB=b"",
+    def __init__(self, password,
                  params=DefaultParams, entropy_f=os.urandom):
         assert isinstance(password, bytes)
         self.pw = password
         self.pw_scalar = params.group.password_to_scalar(password)
-
-        assert isinstance(idA, bytes), repr(idA)
-        assert isinstance(idB, bytes), repr(idB)
-        self.idA = idA
-        self.idB = idB
 
         assert isinstance(params, Params), repr(params)
         self.params = params
@@ -92,16 +87,7 @@ class SPAKE2:
             raise OnlyCallFinishOnce("finish() can only be called once")
         self._finished = True
 
-        other_side = inbound_side_and_message[0:1]
-        self.inbound_message = inbound_side_and_message[1:]
-
-        if other_side not in (SideA, SideB):
-            raise OffSides("I don't know what side they're on")
-        if self.side == other_side:
-            if self.side == SideA:
-                raise OffSides("I'm A, but I got a message from A (not B).")
-            else:
-                raise OffSides("I'm B, but I got a message from B (not A).")
+        self.inbound_message = self._extract_message(inbound_side_and_message)
 
         g = self.params.group
         inbound_elem = g.bytes_to_element(self.inbound_message)
@@ -112,9 +98,7 @@ class SPAKE2:
         pw_unblinding = self.my_unblinding().scalarmult(-self.pw_scalar)
         K_elem = inbound_elem.add(pw_unblinding).scalarmult(self.xy_scalar)
         K_bytes = K_elem.to_bytes()
-        transcript = b":".join([self.idA, self.idB,
-                                self.X_msg(), self.Y_msg(), K_bytes,
-                                self.pw])
+        transcript = self._make_transcript(K_bytes)
         key = sha256(transcript).digest()
         return key
 
@@ -133,6 +117,44 @@ class SPAKE2:
                   ]
         return sha256(b"".join(pieces)).hexdigest()
 
+    def serialize(self):
+        if not self._started:
+            raise SerializedTooEarly("call .start() before .serialize()")
+        return json.dumps(self._serialize_to_dict()).encode("ascii")
+
+    @classmethod
+    def from_serialized(klass, data, params=DefaultParams):
+        d = json.loads(data.decode("ascii"))
+        return klass._deserialize_from_dict(d, params)
+
+class _SPAKE2_Asymmetric(SPAKE2):
+    def __init__(self, password, idA=b"", idB=b"",
+                 params=DefaultParams, entropy_f=os.urandom):
+        SPAKE2.__init__(self, password, params=params, entropy_f=entropy_f)
+
+        assert isinstance(idA, bytes), repr(idA)
+        assert isinstance(idB, bytes), repr(idB)
+        self.idA = idA
+        self.idB = idB
+
+    def _extract_message(self, inbound_side_and_message):
+        other_side = inbound_side_and_message[0:1]
+        inbound_message = inbound_side_and_message[1:]
+
+        if other_side not in (SideA, SideB):
+            raise OffSides("I don't know what side they're on")
+        if self.side == other_side:
+            if self.side == SideA:
+                raise OffSides("I'm A, but I got a message from A (not B).")
+            else:
+                raise OffSides("I'm B, but I got a message from B (not A).")
+        return inbound_message
+
+    def _make_transcript(self, K_bytes):
+        return b":".join([self.idA, self.idB,
+                          self.X_msg(), self.Y_msg(), K_bytes,
+                          self.pw])
+
     def _serialize_to_dict(self):
         g = self.params.group
         d = {"hashed_params": self.hash_params(),
@@ -143,11 +165,6 @@ class SPAKE2:
              "xy_scalar": hexlify(g.scalar_to_bytes(self.xy_scalar)).decode("ascii"),
              }
         return d
-
-    def serialize(self):
-        if not self._started:
-            raise SerializedTooEarly("call .start() before .serialize()")
-        return json.dumps(self._serialize_to_dict()).encode("ascii")
 
     @classmethod
     def _deserialize_from_dict(klass, d, params):
@@ -170,66 +187,89 @@ class SPAKE2:
         self.xy_elem = g.Base.scalarmult(self.xy_scalar)
         self.compute_outbound_message()
         return self
-    @classmethod
-    def from_serialized(klass, data, params=DefaultParams):
-        d = json.loads(data.decode("ascii"))
-        return klass._deserialize_from_dict(d, params)
+
 
 # applications should use SPAKE2_A and SPAKE2_B, not raw SPAKE2()
 
-class SPAKE2_A(SPAKE2):
+class SPAKE2_A(_SPAKE2_Asymmetric):
     side = SideA
     def my_blinding(self): return self.params.M
     def my_unblinding(self): return self.params.N
     def X_msg(self): return self.outbound_message
     def Y_msg(self): return self.inbound_message
 
-class SPAKE2_B(SPAKE2):
+class SPAKE2_B(_SPAKE2_Asymmetric):
     side = SideB
     def my_blinding(self): return self.params.N
     def my_unblinding(self): return self.params.M
     def X_msg(self): return self.inbound_message
     def Y_msg(self): return self.outbound_message
 
-class SPAKE2_Symmetric:
-    def __init__(self, password, idA=b"", idB=b"",
+class SPAKE2_Symmetric(SPAKE2):
+    side = SideSymmetric
+    def __init__(self, password, idSymmetric=b"",
                  params=DefaultParams, entropy_f=os.urandom):
-        self.pw = password
-        self.sA = SPAKE2_A(password, idA, idB, params, entropy_f)
-        self.sB = SPAKE2_B(password, idA, idB, params, entropy_f)
+        SPAKE2.__init__(self, password, params=params, entropy_f=entropy_f)
+        self.idSymmetric = idSymmetric
 
-    def start(self):
-        mA = self.sA.start()
-        mB = self.sB.start()
-        return mA+mB
+    def my_blinding(self): return self.params.S
+    def my_unblinding(self): return self.params.S
 
-    def finish(self, inbound_side_and_message):
-        l = len(inbound_side_and_message)
-        assert l % 2 == 0
-        inbound_A = inbound_side_and_message[:l//2]
-        inbound_B = inbound_side_and_message[l//2:]
-        assert len(inbound_A) == len(inbound_B)
-        keyA = self.sA.finish(inbound_B)
-        keyB = self.sB.finish(inbound_A)
-        if keyA == keyB:
-            raise ReflectionThwarted
-        key = xor_keys(keyA, keyB)
-        return key
+    def _extract_message(self, inbound_side_and_message):
+        other_side = inbound_side_and_message[0:1]
+        inbound_message = inbound_side_and_message[1:]
+        if other_side == SideA:
+            raise OffSides("I'm Symmetric, but I got a message from A")
+        if other_side == SideB:
+            raise OffSides("I'm Symmetric, but I got a message from B")
+        assert other_side == SideSymmetric
+        return inbound_message
 
-    def serialize(self):
-        d = {"password": hexlify(self.pw).decode("ascii"),
-             "sA": self.sA._serialize_to_dict(),
-             "sB": self.sB._serialize_to_dict(),
+    def _make_transcript(self, K_bytes):
+        # since we don't know which side is which, we must sort the messages
+        first_msg, second_msg = sorted([self.inbound_message,
+                                        self.outbound_message])
+        return b":".join([self.idSymmetric,
+                          first_msg, second_msg, K_bytes,
+                          self.pw])
+
+    def hash_params(self):
+        g = self.params.group
+        pieces = [g.arbitrary_element(b"").to_bytes(),
+                  g.scalar_to_bytes(g.password_to_scalar(b"")),
+                  self.params.S.to_bytes(),
+                  ]
+        return sha256(b"".join(pieces)).hexdigest()
+
+    def _serialize_to_dict(self):
+        g = self.params.group
+        d = {"hashed_params": self.hash_params(),
+             "side": self.side.decode("ascii"),
+             "idS": hexlify(self.idSymmetric).decode("ascii"),
+             "password": hexlify(self.pw).decode("ascii"),
+             "xy_scalar": hexlify(g.scalar_to_bytes(self.xy_scalar)).decode("ascii"),
              }
-        return json.dumps(d).encode("ascii")
+        return d
 
     @classmethod
-    def from_serialized(klass, data, params=DefaultParams):
-        d = json.loads(data.decode("ascii"))
-        pw = unhexlify(d["password"].encode("ascii"))
-        self = klass(password=pw)
-        self.sA = SPAKE2_A._deserialize_from_dict(d["sA"], params)
-        self.sB = SPAKE2_B._deserialize_from_dict(d["sB"], params)
+    def _deserialize_from_dict(klass, d, params):
+        def _should_be_unused(count): raise NotImplementedError
+        self = klass(password=unhexlify(d["password"].encode("ascii")),
+                     idSymmetric=unhexlify(d["idS"].encode("ascii")),
+                     params=params, entropy_f=_should_be_unused)
+        if d["side"].encode("ascii") != self.side:
+            raise WrongSideSerialized
+        if d["hashed_params"] != self.hash_params():
+            err = ("SPAKE2.from_serialized() must be called with the same"
+                   "params= that were used to create the serialized data."
+                   "These are different somehow.")
+            raise WrongGroupError(err)
+        g = self.params.group
+        self._started = True
+        xy_scalar_bytes = unhexlify(d["xy_scalar"].encode("ascii"))
+        self.xy_scalar = g.bytes_to_scalar(xy_scalar_bytes)
+        self.xy_elem = g.Base.scalarmult(self.xy_scalar)
+        self.compute_outbound_message()
         return self
 
 # add ECC version for smaller messages/storage
