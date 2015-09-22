@@ -43,7 +43,7 @@ SideSymmetric = b"S"
 
 # to serialize intermediate state, just remember x and A-vs-B. And U/V.
 
-class SPAKE2:
+class _SPAKE2_Base:
     "This class manages one side of a SPAKE2 key negotiation."
 
     side = None # set by the subclass
@@ -127,10 +127,11 @@ class SPAKE2:
         d = json.loads(data.decode("ascii"))
         return klass._deserialize_from_dict(d, params)
 
-class _SPAKE2_Asymmetric(SPAKE2):
+class _SPAKE2_Asymmetric(_SPAKE2_Base):
     def __init__(self, password, idA=b"", idB=b"",
                  params=DefaultParams, entropy_f=os.urandom):
-        SPAKE2.__init__(self, password, params=params, entropy_f=entropy_f)
+        _SPAKE2_Base.__init__(self, password,
+                              params=params, entropy_f=entropy_f)
 
         assert isinstance(idA, bytes), repr(idA)
         assert isinstance(idB, bytes), repr(idB)
@@ -189,7 +190,7 @@ class _SPAKE2_Asymmetric(SPAKE2):
         return self
 
 
-# applications should use SPAKE2_A and SPAKE2_B, not raw SPAKE2()
+# applications should use SPAKE2_A and SPAKE2_B, not raw _SPAKE2_Base()
 
 class SPAKE2_A(_SPAKE2_Asymmetric):
     side = SideA
@@ -205,11 +206,12 @@ class SPAKE2_B(_SPAKE2_Asymmetric):
     def X_msg(self): return self.inbound_message
     def Y_msg(self): return self.outbound_message
 
-class SPAKE2_Symmetric(SPAKE2):
+class SPAKE2_Symmetric(_SPAKE2_Base):
     side = SideSymmetric
     def __init__(self, password, idSymmetric=b"",
                  params=DefaultParams, entropy_f=os.urandom):
-        SPAKE2.__init__(self, password, params=params, entropy_f=entropy_f)
+        _SPAKE2_Base.__init__(self, password,
+                              params=params, entropy_f=entropy_f)
         self.idSymmetric = idSymmetric
 
     def my_blinding(self): return self.params.S
