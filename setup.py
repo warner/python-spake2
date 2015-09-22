@@ -4,11 +4,6 @@ from __future__ import print_function
 import timeit
 from distutils.core import setup, Command
 import versioneer
-versioneer.VCS = "git"
-versioneer.versionfile_source = "spake2/_version.py"
-versioneer.versionfile_build = versioneer.versionfile_source
-versioneer.tag_prefix = "v"
-versioneer.parentdir_prefix = "python-spake2-"
 
 cmdclass = {}
 cmdclass.update(versioneer.get_cmdclass())
