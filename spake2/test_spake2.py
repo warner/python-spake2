@@ -263,7 +263,16 @@ class Basic(unittest.TestCase):
         self.assertEqual(hexlify(kA), hexlify(kB))
         self.assertEqual(len(kA), len(sha256().digest()))
 
-    def test_failure(self):
+    def test_success_id(self):
+        pw = b"password"
+        sA = SPAKE2_A(pw, idA=b"alice", idB=b"bob")
+        sB = SPAKE2_B(pw, idA=b"alice", idB=b"bob")
+        m1A,m1B = sA.start(), sB.start()
+        kA,kB = sA.finish(m1B), sB.finish(m1A)
+        self.assertEqual(hexlify(kA), hexlify(kB))
+        self.assertEqual(len(kA), len(sha256().digest()))
+
+    def test_failure_wrong_password(self):
         pw = b"password"
         sA,sB = SPAKE2_A(pw), SPAKE2_B(b"passwerd")
         m1A,m1B = sA.start(), sB.start()
@@ -271,6 +280,22 @@ class Basic(unittest.TestCase):
         self.assertNotEqual(hexlify(kA), hexlify(kB))
         self.assertEqual(len(kA), len(sha256().digest()))
         self.assertEqual(len(kB), len(sha256().digest()))
+
+    def test_failure_wrong_id(self):
+        pw = b"password"
+        sA = SPAKE2_A(pw, idA=b"alice", idB=b"bob")
+        sB = SPAKE2_B(pw, idA=b"not-alice", idB=b"bob")
+        m1A,m1B = sA.start(), sB.start()
+        kA,kB = sA.finish(m1B), sB.finish(m1A)
+        self.assertNotEqual(hexlify(kA), hexlify(kB))
+
+    def test_failure_swapped_id(self):
+        pw = b"password"
+        sA = SPAKE2_A(pw, idA=b"alice", idB=b"bob")
+        sB = SPAKE2_B(pw, idA=b"bob", idB=b"alice")
+        m1A,m1B = sA.start(), sB.start()
+        kA,kB = sA.finish(m1B), sB.finish(m1A)
+        self.assertNotEqual(hexlify(kA), hexlify(kB))
 
     def test_reflect(self):
         pw = b"password"
@@ -347,8 +372,24 @@ class Symmetric(unittest.TestCase):
         k1,k2 = s1.finish(m2), s2.finish(m1)
         self.assertEqual(hexlify(k1), hexlify(k2))
 
-    def test_failure(self):
+    def test_success_id(self):
+        pw = b"password"
+        s1 = SPAKE2_Symmetric(pw, idSymmetric=b"sym")
+        s2 = SPAKE2_Symmetric(pw, idSymmetric=b"sym")
+        m1,m2 = s1.start(), s2.start()
+        k1,k2 = s1.finish(m2), s2.finish(m1)
+        self.assertEqual(hexlify(k1), hexlify(k2))
+
+    def test_failure_wrong_password(self):
         s1,s2 = SPAKE2_Symmetric(b"password"), SPAKE2_Symmetric(b"wrong")
+        m1,m2 = s1.start(), s2.start()
+        k1,k2 = s1.finish(m2), s2.finish(m1)
+        self.assertNotEqual(hexlify(k1), hexlify(k2))
+
+    def test_failure_wrong_id(self):
+        pw = b"password"
+        s1 = SPAKE2_Symmetric(pw, idSymmetric=b"sym")
+        s2 = SPAKE2_Symmetric(pw, idSymmetric=b"not-sym")
         m1,m2 = s1.start(), s2.start()
         k1,k2 = s1.finish(m2), s2.finish(m1)
         self.assertNotEqual(hexlify(k1), hexlify(k2))
