@@ -151,9 +151,9 @@ will take on the `A` role, and the "server" will be `B`.
 
 This is a nuisance for more egalitarian protocols, where there's no clear way
 to assign these roles ahead of time. In this case, use `SPAKE2_Symmetric` on
-both sides. This internally runs two instances of the protocol at the same
-time, in a cross-over configuration (A->B and B->A), and XORs the resulting
-keys together.
+both sides. This uses a different set of parameters (so it is not
+interoperable with `SPAKE2_A` or `SPAKE2_B`, but should otherwise behave the
+same way.
 
 Carol does:
 
@@ -182,13 +182,6 @@ inmsg1 = receive() # this is outmsg2
 key = s2.finish(inmsg1)
 ```
 
-Since the keys are combined before use, this should not improve the
-attacker's chances of guessing the password. Note that this doubles the
-processing time and message size. It has also not been reviewed like the
-original protocol: use with caution. This implementation guards against the
-trivial attack of reflecting the sender's messages back to them, which would
-otherwise result in an all-zero key.
-
 ## Identifier Strings
 
 The SPAKE2 protocol includes a pair of "identity strings" `idA` and `idB`
@@ -209,6 +202,9 @@ to the file-transfer server, and vice versa.
 
 If provided, `idA` and `idB` must be bytestrings. They default to an empty
 string.
+
+`SPAKE2_Symmetric` uses a single `idSymmetric=` string, instead of `idA` and
+`idB`. Both sides must provide the same `idSymmetric=`, or leave it empty.
 
 ## Serialization
 
@@ -344,6 +340,10 @@ the attacker must perform an offline dictionary attack against the stolen
 data before they can learn the passwords. PAKE2+ support is planned, but not
 yet implemented.
 
+The security of the symmetric case was proved by Kobara/Imai[6] in 2003, and
+uses different (slightly weaker?) reductions than that of the asymmetric
+form. See also Mike Hamburg's analysis[7] from 2015.
+
 Brian Warner first wrote this Python version in July 2010.
 
 #### footnotes
@@ -353,3 +353,5 @@ Brian Warner first wrote this Python version in July 2010.
 [3]: http://www.di.ens.fr/~pointche/Documents/Papers/2005_rsa.pdf "RSA 2005"
 [4]: https://tools.ietf.org/html/draft-ladd-spake2-01 "Ladd's IETF draft"
 [5]: https://github.com/warner/python-pure25519
+[6]: http://eprint.iacr.org/2003/038.pdf "Pretty-Simple Password-Authenticated Key-Exchange Under Standard Assumptions"
+[7]: https://moderncrypto.org/mail-archive/curves/2015/000419.html "PAKE questions"
