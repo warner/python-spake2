@@ -1,6 +1,13 @@
 
 User-Visible Changes in python-spake2
 
+* Release 0.3 (22-Sep-2015)
+
+Use the faster "M=N" blinding factors for SPAKE2_Symmetric, instead of
+running two sessions in parallel and combining the results. This gets the
+same speed and message size as the asymmetric (SPAKE2_A/SPAKE2_B) approach,
+and is probably safe (see README for the security proofs).
+
 * Release 0.2 (08-Apr-2015)
 
 Use Ed25519 group/parameters by default (improves speed, security, and
