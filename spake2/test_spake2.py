@@ -121,12 +121,6 @@ class Utils(unittest.TestCase):
         num = util.unbiased_randrange(start, stop, entropy_f=PRG(seed))
         self.assertTrue(start <= num < stop, (num, seed))
 
-    def test_xor_keys(self):
-        self.assertEqual(util.xor_keys(b"\x00\x00",
-                                       b"\xff\xff"), b"\xff\xff")
-        self.assertEqual(util.xor_keys(b"\x1c\x02",
-                                       b"\x69\x3f"), b"\x75\x3d")
-
 class Group(unittest.TestCase):
     def assertElementsEqual(self, e1, e2, msg=None):
         self.assertEqual(hexlify(e1.to_bytes()), hexlify(e2.to_bytes()), msg)

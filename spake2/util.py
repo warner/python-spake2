@@ -73,11 +73,3 @@ def unbiased_randrange(start, stop, entropy_f):
         #print ["0x%02x" % b for b in candidate_bytes], candidate_int
         if candidate_int < maxval:
             return start + candidate_int
-
-def xor_keys(kA, kB):
-    assert isinstance(kA, bytes)
-    assert isinstance(kB, bytes)
-    assert len(kA) == len(kB)
-    return b"".join(map(lambda a,b: six.int2byte(a^b),
-                        six.iterbytes(kA),
-                        six.iterbytes(kB)))
