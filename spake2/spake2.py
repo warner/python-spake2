@@ -37,9 +37,9 @@ SideSymmetric = b"S"
 #  Y = scalarmult(g, y)
 #  Y* = Y + scalarmult(N, int(pw))
 # KA = scalarmult(Y* + scalarmult(N, -int(pw)), x)
-# key = H(idA, idB, X*, Y*, KA)
+# key = H(H(idA), H(idB), X*, Y*, KA)
 #  KB = scalarmult(X* + scalarmult(M, -int(pw)), y)
-#  key = H(idA, idB, X*, Y*, KB)
+#  key = H(H(idA), H(idB), X*, Y*, KB)
 
 # to serialize intermediate state, just remember x and A-vs-B. And U/V.
 
@@ -152,9 +152,9 @@ class _SPAKE2_Asymmetric(_SPAKE2_Base):
         return inbound_message
 
     def _make_transcript(self, K_bytes):
-        return b":".join([self.idA, self.idB,
-                          self.X_msg(), self.Y_msg(), K_bytes,
-                          self.pw])
+        return b"".join([sha256(self.idA).digest(), sha256(self.idB).digest(),
+                         self.X_msg(), self.Y_msg(), K_bytes,
+                         self.pw])
 
     def _serialize_to_dict(self):
         g = self.params.group
@@ -231,9 +231,9 @@ class SPAKE2_Symmetric(_SPAKE2_Base):
         # since we don't know which side is which, we must sort the messages
         first_msg, second_msg = sorted([self.inbound_message,
                                         self.outbound_message])
-        return b":".join([self.idSymmetric,
-                          first_msg, second_msg, K_bytes,
-                          self.pw])
+        return b"".join([sha256(self.idSymmetric).digest(),
+                         first_msg, second_msg, K_bytes,
+                         self.pw])
 
     def hash_params(self):
         g = self.params.group
