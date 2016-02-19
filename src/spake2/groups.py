@@ -194,7 +194,7 @@ class IntegerGroup:
 
 
 def expandstring(kind, data, bits):
-    return Hkdf(b"", data, hash=hashlib.sha512).expand(b"spake2-group-expand-" + kind + b"-" + bytes(str(bits), "ascii"), bits / 8)
+    return Hkdf(b"", data, hash=hashlib.sha256).expand(b"spake2-group-expand-" + kind + b"-" + bytes(str(bits), "ascii"), bits / 8)
 
 
 # This 1024-bit group originally came from the J-PAKE demo code,
