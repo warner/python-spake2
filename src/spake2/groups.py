@@ -62,6 +62,8 @@ use os.urandom is for deterministic unit tests.
 """
 
 
+def expandstring(kind, data, bits):
+    return Hkdf(b"", data, hash=hashlib.sha256).expand(b"spake2-group-expand-" + kind + b"-" + bytes(str(bits), "ascii"), bits / 8)
 
 class _Element:
     def __init__(self, group, e):
@@ -123,7 +125,7 @@ class IntegerGroup:
         assert isinstance(pw, bytes)
         # the oversized hash reduces bias in the result, so
         # uniformly-random passwords give nearly-uniform scalars
-        oversized = hashlib.sha512(pw).digest()
+        oversized = expandstring(b"password", pw, 512)
         assert len(oversized) >= self.scalar_size_bytes
         i = bytes_to_number(oversized)
         return i % self.q
