@@ -395,4 +395,4 @@ Brian Warner first wrote this Python version in July 2010.
 [5]: https://github.com/warner/python-pure25519
 [6]: http://eprint.iacr.org/2003/038.pdf "Pretty-Simple Password-Authenticated Key-Exchange Under Standard Assumptions"
 [7]: https://moderncrypto.org/mail-archive/curves/2015/000419.html "PAKE questions"
-[8]: "The Twin Diffie-Hellman Problem and Applications", David Cash, Eike Kiltz, Victor Shoup, February 10, 2009 "Twin-DH 2009"
+[8]: http://www.research.rutgers.edu/~dc789/dh.pdf, "The Twin Diffie-Hellman Problem and Applications", David Cash, Eike Kiltz, Victor Shoup, February 10, 2009, also https://eprint.iacr.org/2008/067 "Twin-DH 2009"
