@@ -244,8 +244,8 @@ class Group(unittest.TestCase):
         self.assertElementsEqual(e2.add(e3), e1.add(e4))
 
 I23 = groups.IntegerGroup(p=23, q=11, g=2,
-                          element_hasher=groups.sha256,
-                          scalar_hasher=groups.sha256)
+                          element_hasher=lambda b: groups.expandstring(b"element", b, 256),
+                          scalar_hasher=lambda b: groups.expandstring(b"scalar", b, 256))
 
 
 class Basic(unittest.TestCase):
