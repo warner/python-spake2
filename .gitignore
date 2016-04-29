@@ -3,3 +3,5 @@
 /build/
 /.coverage
 /.coverage.el
+/.tox/
+/spake2.egg-info/

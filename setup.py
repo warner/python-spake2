@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 import timeit
-from distutils.core import setup, Command
+from setuptools import setup, Command
 import versioneer
 
 cmdclass = {}

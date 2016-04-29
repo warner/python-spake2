@@ -1,4 +1,8 @@
+sudo: false
 language: python
+cache: pip
+before_cache
+ - rm -f $HOME/.cache/pip/log/debug.log
 python:
   - "2.6"
   - "2.7"
@@ -8,11 +12,9 @@ python:
   - "pypy"
   - "pypy3"
 install:
-  - echo "no dependencies to install"
-  - pip install python-coveralls
+  - pip install -U tox virtualenv coverage python-coveralls
 script:
-  - python setup.py build
-  - coverage run setup.py test
-  - python setup.py speed
+  - tox -e py
+  - tox -e speed
 after_success:
   - coveralls
