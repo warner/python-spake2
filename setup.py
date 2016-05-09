@@ -8,21 +8,14 @@ import versioneer
 cmdclass = {}
 cmdclass.update(versioneer.get_cmdclass())
 
-class Test(Command):
-    description = "run unit tests"
+class Speed(Command):
+    description = "run speed benchmarks"
     user_options = []
     boolean_options = []
     def initialize_options(self):
         pass
     def finalize_options(self):
         pass
-    def run(self):
-        from spake2 import test_spake2
-        test_spake2.unittest.main(module=test_spake2, argv=["dummy"])
-cmdclass["test"] = Test
-
-class Speed(Test):
-    description = "run speed benchmarks"
     def run(self):
         def do(setup_statements, statement):
             # extracted from timeit.py
