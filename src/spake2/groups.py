@@ -195,10 +195,6 @@ class IntegerGroup:
         return _Element(self, (e1._e * e2._e) % self.p)
 
 
-def expandstring(kind, data, bits):
-    return Hkdf(b"", data, hash=hashlib.sha256).expand(b"spake2-group-expand-" + kind + b"-" + bytes(str(bits), "ascii"), bits / 8)
-
-
 # This 1024-bit group originally came from the J-PAKE demo code,
 # http://haofeng66.googlepages.com/JPAKEDemo.java . That java code
 # recommended these 2048 and 3072 bit groups from this NIST document:
