@@ -1,7 +1,7 @@
 import unittest
 from binascii import hexlify
 from hashlib import sha256
-from spake2.spake2 import SPAKE2_A, SPAKE2_B
+from spake2.spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
 from .common import PRG
 
 class TestPRG(unittest.TestCase):
@@ -13,9 +13,9 @@ class TestPRG(unittest.TestCase):
         dataB = PRGB(16)
         self.assertEqual(hexlify(dataB), b"2af6d4b843a9e6cd1d185eb5de870f77")
 
-class Basic(unittest.TestCase):
-    def test_success(self):
-        """Make sure we know when an incompatible change has landed"""
+class SPAKE2(unittest.TestCase):
+    """Make sure we know when an incompatible change has landed"""
+    def test_asymmetric(self):
         PRGA = PRG(b"A")
         PRGB = PRG(b"B")
         pw = b"password"
@@ -29,3 +29,19 @@ class Basic(unittest.TestCase):
                          b"a25f511e6a17cc3855194b5a4b4ed93be511c1da2b2b9d76281f360a7e1da981")
         self.assertEqual(hexlify(kA), hexlify(kB))
         self.assertEqual(len(kA), len(sha256().digest()))
+
+    def test_symmetric(self):
+        PRG1 = PRG(b"1")
+        PRG2 = PRG(b"2")
+        pw = b"password"
+        s1 = SPAKE2_Symmetric(pw, entropy_f=PRG1)
+        s2 = SPAKE2_Symmetric(pw, entropy_f=PRG2)
+        m11,m12 = s1.start(), s2.start()
+        self.assertEqual(hexlify(m11), b"5399bfc2cab3f574ea6201668d4b1d90f5dd300068c006b9832c8ea2f605c09ce0")
+        self.assertEqual(hexlify(m12), b"53ce58ebbb3a221ce825b43689379557a9a4b7db4b77138060eb25588108e40a38")
+
+        k1,k2 = s1.finish(m12), s2.finish(m11)
+        self.assertEqual(hexlify(k1),
+                         b"bc89d46f5d111aa80aee0a2b65d0e2fd36caba3bc4832804e6f6eb6045dd8483")
+        self.assertEqual(hexlify(k1), hexlify(k2))
+        self.assertEqual(len(k1), len(sha256().digest()))
