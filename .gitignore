@@ -5,3 +5,4 @@
 /.coverage.el
 /.tox/
 /src/spake2.egg-info/
+/.cache/
