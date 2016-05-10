@@ -14,7 +14,7 @@ python:
 install:
   - pip install -U tox virtualenv coverage python-coveralls
 script:
-  - tox -e py
+  - tox -e coverage
   - tox -e speed
 after_success:
   - coveralls
