@@ -6,4 +6,4 @@ include =
 omit =
  */spake2/six.py
  */spake2/_version.py
- */spake2/test_spake2.py
+ */spake2/test/*
