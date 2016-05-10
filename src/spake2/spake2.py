@@ -3,6 +3,7 @@ import os, json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
 from .params import Params, ParamsEd25519
+from .finalize import finalize_SPAKE2, finalize_SPAKE2_symmetric
 
 DefaultParams = ParamsEd25519
 
@@ -98,8 +99,7 @@ class _SPAKE2_Base:
         pw_unblinding = self.my_unblinding().scalarmult(-self.pw_scalar)
         K_elem = inbound_elem.add(pw_unblinding).scalarmult(self.xy_scalar)
         K_bytes = K_elem.to_bytes()
-        transcript = self._make_transcript(K_bytes)
-        key = sha256(transcript).digest()
+        key = self._finalize(K_bytes)
         return key
 
 
@@ -151,10 +151,10 @@ class _SPAKE2_Asymmetric(_SPAKE2_Base):
                 raise OffSides("I'm B, but I got a message from B (not A).")
         return inbound_message
 
-    def _make_transcript(self, K_bytes):
-        return b"".join([sha256(self.idA).digest(), sha256(self.idB).digest(),
-                         self.X_msg(), self.Y_msg(), K_bytes,
-                         self.pw])
+    def _finalize(self, K_bytes):
+        return finalize_SPAKE2(self.idA, self.idB,
+                               self.X_msg(), self.Y_msg(),
+                               K_bytes, self.pw)
 
     def _serialize_to_dict(self):
         g = self.params.group
@@ -227,13 +227,11 @@ class SPAKE2_Symmetric(_SPAKE2_Base):
         assert other_side == SideSymmetric
         return inbound_message
 
-    def _make_transcript(self, K_bytes):
-        # since we don't know which side is which, we must sort the messages
-        first_msg, second_msg = sorted([self.inbound_message,
-                                        self.outbound_message])
-        return b"".join([sha256(self.idSymmetric).digest(),
-                         first_msg, second_msg, K_bytes,
-                         self.pw])
+    def _finalize(self, K_bytes):
+        return finalize_SPAKE2_symmetric(self.idSymmetric,
+                                         self.inbound_message,
+                                         self.outbound_message,
+                                         K_bytes, self.pw)
 
     def hash_params(self):
         g = self.params.group
