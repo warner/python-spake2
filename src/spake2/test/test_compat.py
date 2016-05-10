@@ -81,7 +81,8 @@ class PasswordToScalar(unittest.TestCase):
     def test_vectors(self):
         for vector in P2S_TEST_VECTORS:
             group = P2S_GROUPS[vector["group"]]
-            scalar = group.password_to_scalar(unhexlify(vector["pw_hex"]))
+            pw = unhexlify(vector["pw_hex"].encode("ascii"))
+            scalar = group.password_to_scalar(pw)
             scalar_bytes = group.scalar_to_bytes(scalar)
             self.assertEqual(len(scalar_bytes), group.scalar_size_bytes)
             expected = vector["bytes_hex"].encode("ascii")
