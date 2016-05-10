@@ -4,4 +4,4 @@
 /.coverage
 /.coverage.el
 /.tox/
-/spake2.egg-info/
+/src/spake2.egg-info/
