@@ -89,6 +89,36 @@ class PasswordToScalar(unittest.TestCase):
             expected = vector["bytes_hex"].encode("ascii")
             self.assertEqual(hexlify(scalar_bytes), expected, vector)
 
+# check for endian issues, number-of-leading-zeros
+S2B_TEST_VECTORS = [
+    {"group": "I1024", "scalar": 1,
+     "bytes_hex": "0000000000000000000000000000000000000001"},
+    {"group": "I1024", "scalar": 2,
+     "bytes_hex": "0000000000000000000000000000000000000002"},
+    {"group": "I2048", "scalar": 1,
+     "bytes_hex": "00000000000000000000000000000000000000000000000000000001"},
+    {"group": "I2048", "scalar": 2,
+     "bytes_hex": "00000000000000000000000000000000000000000000000000000002"},
+    {"group": "I3072", "scalar": 1,
+     "bytes_hex": "0000000000000000000000000000000000000000000000000000000000000001"},
+    {"group": "I3072", "scalar": 2,
+     "bytes_hex": "0000000000000000000000000000000000000000000000000000000000000002"},
+    {"group": "Ed25519", "scalar": 1,
+     "bytes_hex": "0100000000000000000000000000000000000000000000000000000000000000"},
+    {"group": "Ed25519", "scalar": 2,
+     "bytes_hex": "0200000000000000000000000000000000000000000000000000000000000000"},
+    ]
+
+class ScalarToBytes(unittest.TestCase):
+    def test_vectors(self):
+        for vector in S2B_TEST_VECTORS:
+            group = GROUPS[vector["group"]]
+            scalar = vector["scalar"]
+            scalar_bytes = group.scalar_to_bytes(scalar)
+            #print(hexlify(scalar_bytes))
+            expected = vector["bytes_hex"].encode("ascii")
+            self.assertEqual(hexlify(scalar_bytes), expected, vector)
+
 AE_TEST_VECTORS = [
     {"group": "I1024", "seed_hex": "41",
      "element_hex": "102db0f3f0ba6c2274dff5fa7502a796673fb77d18907a3ea466dfabd5f13b7dbd4b593ff7d72592d54ee13819a8034f471a2f1f2fd329dcf32ca703e9540ce8cbc839ce06b92abed7728a0ec5f62d9a7effb0356ffc66108777b2092fc91c6a7532045252e33642c6819b64349ffef8e88c2a628c4d8a3aa75b2c73eb50b2e4"},
