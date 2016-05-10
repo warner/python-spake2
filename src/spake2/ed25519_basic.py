@@ -1,4 +1,5 @@
 import binascii, hashlib, itertools
+from .groups import expand_arbitrary_element_seed
 
 Q = 2**255 - 19
 L = 2**252 + 27742317777372353535851937790883648493
@@ -267,8 +268,11 @@ _zero_bytes = Zero.to_bytes()
 
 
 def arbitrary_element(seed): # unknown DL
-    # TODO: if we don't need uniformity, maybe use just sha256 here?
-    hseed = hashlib.sha512(seed).digest()
+    # We don't strictly need the uniformity provided by hashing to an
+    # oversized string (128 bits more than the field size), then reducing
+    # down to Q. But it's comforting, and it's the same technique we use for
+    # converting passwords/seeds to scalars (which *does* need uniformity).
+    hseed = expand_arbitrary_element_seed(seed, (256/8)+16)
     y = int(binascii.hexlify(hseed), 16) % Q
 
     # we try successive Y values until we find a valid point
