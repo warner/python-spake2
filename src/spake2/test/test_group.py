@@ -22,7 +22,7 @@ class Group(unittest.TestCase):
 
     def test_basic(self):
         for g in ALL_GROUPS:
-            fr = PRG(0)
+            fr = PRG(b"0")
             i = g.random_scalar(entropy_f=fr)
             self.assertTrue(0 <= i < g.order())
             b = g.scalar_to_bytes(i)
@@ -71,7 +71,7 @@ class Group(unittest.TestCase):
 
     def test_from_bytes(self):
         for g in ALL_GROUPS:
-            fr = PRG(0)
+            fr = PRG(b"0")
             e = g.Base
             self.assertElementsEqual(g.bytes_to_element(e.to_bytes()), e)
             e = g.Base.scalarmult(2)
@@ -99,7 +99,7 @@ class Group(unittest.TestCase):
 
     def test_blinding(self):
         for g in ALL_GROUPS:
-            fr = PRG(0)
+            fr = PRG(b"0")
             _, pubkey = random_element(g, fr)
             _, U = random_element(g, fr)
             pw = g.random_scalar(fr)

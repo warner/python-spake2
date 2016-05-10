@@ -12,8 +12,12 @@ class PRG:
         return b"".join([six.next(self.generator) for i in range(numbytes)])
 
     def block_generator(self, seed):
+        assert isinstance(seed, type(b""))
         for counter in count():
-            cseed = ("prng-%d-%s" % (counter, seed)).encode("ascii")
+            cseed = b"".join([b"prng-",
+                              str(counter).encode("ascii"),
+                              b"-",
+                              seed])
             block = sha256(cseed).digest()
             for i in range(len(block)):
                 yield block[i:i+1]

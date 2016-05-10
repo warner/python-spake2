@@ -59,7 +59,7 @@ class Basic(unittest.TestCase):
 
 class OtherEntropy(unittest.TestCase):
     def test_entropy(self):
-        fr = PRG("seed")
+        fr = PRG(b"seed")
         pw = b"password"
         sA,sB = SPAKE2_A(pw, entropy_f=fr), SPAKE2_B(pw, entropy_f=fr)
         m1A1,m1B1 = sA.start(), sB.start()
@@ -68,7 +68,7 @@ class OtherEntropy(unittest.TestCase):
 
         # run it again with the same entropy stream: all messages should be
         # identical
-        fr = PRG("seed")
+        fr = PRG(b"seed")
         sA,sB = SPAKE2_A(pw, entropy_f=fr), SPAKE2_B(pw, entropy_f=fr)
         m1A2,m1B2 = sA.start(), sB.start()
         kA2,kB2 = sA.finish(m1B2), sB.finish(m1A2)

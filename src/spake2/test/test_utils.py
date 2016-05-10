@@ -89,5 +89,6 @@ class Utils(unittest.TestCase):
             self.do_test_unbiased_randrange(1, 257, seed)
 
     def do_test_unbiased_randrange(self, start, stop, seed):
-        num = util.unbiased_randrange(start, stop, entropy_f=PRG(seed))
+        seed_b = str(seed).encode("ascii")
+        num = util.unbiased_randrange(start, stop, entropy_f=PRG(seed_b))
         self.assertTrue(start <= num < stop, (num, seed))
