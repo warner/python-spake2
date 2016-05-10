@@ -63,7 +63,9 @@ use os.urandom is for deterministic unit tests.
 
 
 def expandstring(kind, data, bits):
-    return Hkdf(b"", data, hash=hashlib.sha256).expand(b"spake2-group-expand-" + kind + b"-" + bytes(str(bits), "ascii"), bits / 8)
+    h = Hkdf(salt=b"", input_key_material=data, hash=hashlib.sha256)
+    info = b"spake2-group-expand-" + kind + b"-" + ("%d" % bits).encode("ascii")
+    return h.expand(info, bits / 8)
 
 class _Element:
     def __init__(self, group, e):
