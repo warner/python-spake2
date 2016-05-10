@@ -1,7 +1,7 @@
 
 import unittest
-from . import spake2, util, groups, params, six, ed25519_group
-from .spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
+from spake2 import spake2, util, groups, params, six, ed25519_group
+from spake2.spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
 from binascii import hexlify
 from hashlib import sha256
 from itertools import count
