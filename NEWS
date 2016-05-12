@@ -1,6 +1,24 @@
 
 User-Visible Changes in python-spake2
 
+* Release 0.7 (12-May-2016)
+
+COMPATIBILITY BREAK
+
+This release changes the way passwords are turned into scalars, and the way
+the final transcript hash is formatted. Hopefully this will be compatible
+with the proposed SJCL (Javascript) implementation described in the comments
+of https://github.com/bitwiseshiftleft/sjcl/pull/273 . Applications which use
+python-spake2-0.3 or earlier will not interoperate with those which use 0.7
+or later: the session keys will never match.
+
+pypy3 support has been dropped, until pypy3 handles python3.3 or later (it
+currently implements the equivalent of python3.2).
+
+python-spake2 now depends on the "hkdf" package. Tox and py.test are now used
+for running tests. setup.py has been switched from distutils to setuptools.
+
+
 * Release 0.3 (22-Sep-2015)
 
 Use the faster "M=N" blinding factors for SPAKE2_Symmetric, instead of
@@ -8,11 +26,13 @@ running two sessions in parallel and combining the results. This gets the
 same speed and message size as the asymmetric (SPAKE2_A/SPAKE2_B) approach,
 and is probably safe (see README for the security proofs).
 
+
 * Release 0.2 (08-Apr-2015)
 
 Use Ed25519 group/parameters by default (improves speed, security, and
 message size). Note that both sides must use the same parameter set for
 compatibility.
+
 
 * Release 0.1 (13-Feb-2015)
 
