@@ -4,7 +4,8 @@ from hashlib import sha256
 from hkdf import Hkdf
 from .myhkdf import HKDF as myHKDF
 from spake2 import groups, ed25519_group
-from spake2.spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
+from spake2.spake2 import (SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric,
+                           finalize_SPAKE2, finalize_SPAKE2_symmetric)
 from .common import PRG
 
 class TestPRG(unittest.TestCase):
@@ -213,3 +214,19 @@ class HKDF(unittest.TestCase):
             #print(hexlify(digest))
             expected = vector["OKM"].encode("ascii")
             self.assertEqual(hexlify(digest), expected, vector)
+
+class Finalize(unittest.TestCase):
+    def test_asymmetric(self):
+        key = finalize_SPAKE2(b"idA", b"idB", b"X_msg", b"Y_msg",
+                              b"K_bytes", b"pw")
+        self.assertEqual(hexlify(key), b"b90002522d29f405fbd5de17741c45c96dec0a4d48c44b05ad53c374c5a48a30")
+
+    def test_symmetric(self):
+        key1 = finalize_SPAKE2_symmetric(b"idSymmetric",
+                                         b"X_msg", b"Y_msg",
+                                         b"K_bytes", b"pw")
+        self.assertEqual(hexlify(key1), b"8a3738cdf3d99390d8b4d2e581b88184d7ab59125767f5b5a84d5643dbab1cb7")
+        key2 = finalize_SPAKE2_symmetric(b"idSymmetric",
+                                         b"Y_msg", b"X_msg",
+                                         b"K_bytes", b"pw")
+        self.assertEqual(hexlify(key1), hexlify(key2))

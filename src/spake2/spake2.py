@@ -1,9 +1,7 @@
-
 import os, json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
 from .params import Params, ParamsEd25519
-from .finalize import finalize_SPAKE2, finalize_SPAKE2_symmetric
 
 DefaultParams = ParamsEd25519
 
@@ -43,6 +41,21 @@ SideSymmetric = b"S"
 #  key = H(H(idA), H(idB), X*, Y*, KB)
 
 # to serialize intermediate state, just remember x and A-vs-B. And U/V.
+
+def finalize_SPAKE2(idA, idB, X_msg, Y_msg, K_bytes, pw):
+    transcript = b"".join([sha256(idA).digest(), sha256(idB).digest(),
+                           X_msg, Y_msg, K_bytes, pw])
+    key = sha256(transcript).digest()
+    return key
+
+def finalize_SPAKE2_symmetric(idSymmetric, msg1, msg2, K_bytes, pw):
+    # since we don't know which side is which, we must sort the messages
+    first_msg, second_msg = sorted([msg1, msg2])
+    transcript = b"".join([sha256(idSymmetric).digest(),
+                           first_msg, second_msg, K_bytes,
+                           pw])
+    key = sha256(transcript).digest()
+    return key
 
 class _SPAKE2_Base:
     "This class manages one side of a SPAKE2 key negotiation."
