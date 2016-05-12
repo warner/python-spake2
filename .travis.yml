@@ -10,7 +10,6 @@ python:
   - "3.4"
   - "3.5"
   - "pypy"
-  - "pypy3"
 install:
   - pip install -U tox virtualenv coverage python-coveralls
 script:

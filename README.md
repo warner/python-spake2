@@ -3,7 +3,7 @@
 
 * License: MIT
 * Dependencies: none (pure-python)
-* Compatible With: Python 2.6, 2.7, 3.3, 3.4, 3.5, pypy2, pypy3
+* Compatible With: Python 2.6, 2.7, 3.3, 3.4, 3.5, pypy2
 * [![Build Status](https://travis-ci.org/warner/python-spake2.png?branch=master)](https://travis-ci.org/warner/python-spake2) [![Coverage Status](https://coveralls.io/repos/warner/python-spake2/badge.svg)](https://coveralls.io/r/warner/python-spake2)
 
 This library implements the SPAKE2 password-authenticated key exchange
