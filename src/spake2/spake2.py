@@ -40,7 +40,7 @@ SideSymmetric = b"S"
 #  KB = scalarmult(X* + scalarmult(M, -int(pw)), y)
 #  key = H(H(pw) + H(idA) + H(idB) + X* + Y* + KB)
 
-# to serialize intermediate state, just remember x and A-vs-B. And U/V.
+# to serialize intermediate state, just remember x and A-vs-B. And M/N.
 
 def finalize_SPAKE2(idA, idB, X_msg, Y_msg, K_bytes, pw):
     transcript = b"".join([sha256(pw).digest(),
