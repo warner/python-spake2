@@ -267,12 +267,12 @@ class SPAKE2_Symmetric(_SPAKE2_Base):
 
     @classmethod
     def _deserialize_from_dict(klass, d, params):
+        if d["side"].encode("ascii") != SideSymmetric:
+            raise WrongSideSerialized
         def _should_be_unused(count): raise NotImplementedError
         self = klass(password=unhexlify(d["password"].encode("ascii")),
                      idSymmetric=unhexlify(d["idS"].encode("ascii")),
                      params=params, entropy_f=_should_be_unused)
-        if d["side"].encode("ascii") != self.side:
-            raise WrongSideSerialized
         if d["hashed_params"] != self.hash_params():
             err = ("SPAKE2.from_serialized() must be called with the same"
                    "params= that were used to create the serialized data."

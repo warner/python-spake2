@@ -163,6 +163,13 @@ class Errors(unittest.TestCase):
 
         self.assertRaises(spake2.OffSides, sA2.finish, b"C"+msgB)
 
+        sS = SPAKE2_Symmetric(pw)
+        sS.start()
+        self.assertRaises(spake2.OffSides, sS.finish, msgA)
+        sS = SPAKE2_Symmetric(pw)
+        sS.start()
+        self.assertRaises(spake2.OffSides, sS.finish, msgB)
+
 
     def test_unserialize_wrong(self):
         s = SPAKE2_A(b"password", params=params.Params1024)
@@ -176,6 +183,20 @@ class Errors(unittest.TestCase):
                           params=params.Params3072)
         self.assertRaises(spake2.WrongSideSerialized,
                           SPAKE2_B.from_serialized, data,
+                          params=params.Params1024)
+
+        ss = SPAKE2_Symmetric(b"password", params=params.Params1024)
+        ss.start()
+        sdata = ss.serialize()
+
+        SPAKE2_Symmetric.from_serialized(sdata, params=params.Params1024) # ok
+        self.assertRaises(spake2.WrongGroupError, # default is P2048
+                          SPAKE2_Symmetric.from_serialized, sdata)
+        self.assertRaises(spake2.WrongGroupError,
+                          SPAKE2_Symmetric.from_serialized, sdata,
+                          params=params.Params3072)
+        self.assertRaises(spake2.WrongSideSerialized,
+                          SPAKE2_Symmetric.from_serialized, data, # from A
                           params=params.Params1024)
 
 if __name__ == '__main__':
