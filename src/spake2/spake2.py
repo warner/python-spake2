@@ -36,24 +36,25 @@ SideSymmetric = b"S"
 #  Y = scalarmult(g, y)
 #  Y* = Y + scalarmult(N, int(pw))
 # KA = scalarmult(Y* + scalarmult(N, -int(pw)), x)
-# key = H(H(idA), H(idB), X*, Y*, KA)
+# key = H(H(pw) + H(idA) + H(idB) + X* + Y* + KA)
 #  KB = scalarmult(X* + scalarmult(M, -int(pw)), y)
-#  key = H(H(idA), H(idB), X*, Y*, KB)
+#  key = H(H(pw) + H(idA) + H(idB) + X* + Y* + KB)
 
 # to serialize intermediate state, just remember x and A-vs-B. And U/V.
 
 def finalize_SPAKE2(idA, idB, X_msg, Y_msg, K_bytes, pw):
-    transcript = b"".join([sha256(idA).digest(), sha256(idB).digest(),
-                           X_msg, Y_msg, K_bytes, pw])
+    transcript = b"".join([sha256(pw).digest(),
+                           sha256(idA).digest(), sha256(idB).digest(),
+                           X_msg, Y_msg, K_bytes])
     key = sha256(transcript).digest()
     return key
 
 def finalize_SPAKE2_symmetric(idSymmetric, msg1, msg2, K_bytes, pw):
     # since we don't know which side is which, we must sort the messages
     first_msg, second_msg = sorted([msg1, msg2])
-    transcript = b"".join([sha256(idSymmetric).digest(),
-                           first_msg, second_msg, K_bytes,
-                           pw])
+    transcript = b"".join([sha256(pw).digest(),
+                           sha256(idSymmetric).digest(),
+                           first_msg, second_msg, K_bytes])
     key = sha256(transcript).digest()
     return key
 

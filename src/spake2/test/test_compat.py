@@ -30,7 +30,7 @@ class SPAKE2(unittest.TestCase):
 
         kA,kB = sA.finish(m1B), sB.finish(m1A)
         self.assertEqual(hexlify(kA),
-                         b"9134475e92119062ca9026db6f1a11127f51b8b77133b0b488ac3f328cc9bbdf")
+                         b"a480bca13fa04464bb644f10e340125e96c9494f7399fef7c2bda67eb0fdf06d")
         self.assertEqual(hexlify(kA), hexlify(kB))
         self.assertEqual(len(kA), len(sha256().digest()))
 
@@ -46,7 +46,7 @@ class SPAKE2(unittest.TestCase):
 
         k1,k2 = s1.finish(m12), s2.finish(m11)
         self.assertEqual(hexlify(k1),
-                         b"8a69eb6c4b6ad7b871a64f2bde5b8c1fa12268526ee478ef8b53aad44687e1e9")
+                         b"9c4fccaa3f0740615cee6fd10ed5d3a311b91b5bdc65f53e4ea7cb2fe8aa96eb")
         self.assertEqual(hexlify(k1), hexlify(k2))
         self.assertEqual(len(k1), len(sha256().digest()))
 
@@ -219,13 +219,13 @@ class Finalize(unittest.TestCase):
     def test_asymmetric(self):
         key = finalize_SPAKE2(b"idA", b"idB", b"X_msg", b"Y_msg",
                               b"K_bytes", b"pw")
-        self.assertEqual(hexlify(key), b"b90002522d29f405fbd5de17741c45c96dec0a4d48c44b05ad53c374c5a48a30")
+        self.assertEqual(hexlify(key), b"aa02a627537543399bb1b4b430646480b6d36ab5c44842e738c8f78694d8afac")
 
     def test_symmetric(self):
         key1 = finalize_SPAKE2_symmetric(b"idSymmetric",
                                          b"X_msg", b"Y_msg",
                                          b"K_bytes", b"pw")
-        self.assertEqual(hexlify(key1), b"8a3738cdf3d99390d8b4d2e581b88184d7ab59125767f5b5a84d5643dbab1cb7")
+        self.assertEqual(hexlify(key1), b"330a7ce7bb010fea7dae7e15b2261315403ab5dc269e461f6eb1cc6566620790")
         key2 = finalize_SPAKE2_symmetric(b"idSymmetric",
                                          b"Y_msg", b"X_msg",
                                          b"K_bytes", b"pw")
