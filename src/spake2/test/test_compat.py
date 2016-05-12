@@ -1,6 +1,8 @@
 import unittest
 from binascii import hexlify, unhexlify
 from hashlib import sha256
+from hkdf import Hkdf
+from .myhkdf import HKDF as myHKDF
 from spake2 import groups, ed25519_group
 from spake2.spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
 from .common import PRG
@@ -151,3 +153,63 @@ class ArbitraryElement(unittest.TestCase):
             expected = vector["element_hex"].encode("ascii")
             self.assertEqual(hexlify(elem_bytes), expected, vector)
 
+# test vectors from RFC5869
+
+HKDF_TEST_VECTORS = [
+    {
+        "IKM": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+        "salt": "000102030405060708090a0b0c",
+        "info": "f0f1f2f3f4f5f6f7f8f9",
+        "L": 42,
+        "PRK": "077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5",
+        "OKM": "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865"
+        },
+    {
+        "IKM": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f",
+        "salt": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+        "info": "b0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "L": 82,
+        "PRK": "06a6b88c5853361a06104c9ceb35b45cef760014904671014a193f40c15fc244",
+        "OKM": "b11e398dc80327a1c8e7f78c596a49344f012eda2d4efad8a050cc4c19afa97c59045a99cac7827271cb41c65e590e09da3275600c2f09b8367793a9aca3db71cc30c58179ec3e87c14c01d5c1f3434f1d87"
+        },
+    {
+        "IKM": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+        "salt": "",
+        "info": "",
+        "L": 42,
+        "PRK": "19ef24a32c717b167f33a91d6f648bdf96596776afdb6377ac434c1c293ccb04",
+        "OKM": "8da4e775a563c18f715f802a063c5a31b8a11f5c5ee1879ec3454e5f3c738d2d9d201395faa4b61a96c8"
+        },
+    ]
+
+# some additional short vectors. Note that "salt" is zero-padded to length of
+# the hash (and hashed down if longer), so e.g. salt="", salt="00", and
+# salt="0000" all give the same results.
+HKDF_TEST_VECTORS += [
+    {"salt": "",   "IKM": "01", "info": "02", "L": 4, "OKM": "f4a855e4"},
+    {"salt": "00", "IKM": "01", "info": "02", "L": 4, "OKM": "f4a855e4"},
+    {"salt": "",   "IKM": "01", "info": "", "L": 4, "OKM": "be7e83fb"},
+    {"salt": "00", "IKM": "01", "info": "", "L": 4, "OKM": "be7e83fb"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 4, "OKM": "f0f7dcf9"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 8, "OKM": "f0f7dcf9fe847ae5"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 16, "OKM": "f0f7dcf9fe847ae58a24e82b13737c52"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 31, "OKM": "f0f7dcf9fe847ae58a24e82b13737c52bf6a4a45810f5d819ec3932eaa6012"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 32, "OKM": "f0f7dcf9fe847ae58a24e82b13737c52bf6a4a45810f5d819ec3932eaa601290"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 33, "OKM": "f0f7dcf9fe847ae58a24e82b13737c52bf6a4a45810f5d819ec3932eaa60129072"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 64, "OKM": "f0f7dcf9fe847ae58a24e82b13737c52bf6a4a45810f5d819ec3932eaa60129072a91afe92cffe2f2327b65ba4e2b2b6b51ed34363c9c4cca58ae7409209b97d"},
+    {"salt": "01", "IKM": "01", "info": "", "L": 65, "OKM": "f0f7dcf9fe847ae58a24e82b13737c52bf6a4a45810f5d819ec3932eaa60129072a91afe92cffe2f2327b65ba4e2b2b6b51ed34363c9c4cca58ae7409209b97d76"},
+    {"salt": "00", "IKM": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "info": "", "L": 4, "OKM": "37ad2910"},
+    ]
+
+class HKDF(unittest.TestCase):
+    def test_vectors(self):
+        for vector in HKDF_TEST_VECTORS:
+            salt = unhexlify(vector["salt"].encode("ascii"))
+            IKM = unhexlify(vector["IKM"].encode("ascii"))
+            info = unhexlify(vector["info"].encode("ascii"))
+            h = Hkdf(salt=salt, input_key_material=IKM, hash=sha256)
+            digest = h.expand(info, vector["L"])
+            self.assertEqual(digest, myHKDF(IKM, vector["L"], salt, info))
+            #print(hexlify(digest))
+            expected = vector["OKM"].encode("ascii")
+            self.assertEqual(hexlify(digest), expected, vector)
