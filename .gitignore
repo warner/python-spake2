@@ -6,3 +6,4 @@
 /.tox/
 /src/spake2.egg-info/
 /.cache/
+/coverage.xml
