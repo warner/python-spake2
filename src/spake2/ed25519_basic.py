@@ -164,9 +164,10 @@ def random_scalar(entropy_f): # 0..L-1 inclusive
     oversized = int(binascii.hexlify(entropy_f(32+32)), 16)
     return oversized % L
 
-def password_to_scalar(pw):
-    oversized = hashlib.sha512(pw).digest()
-    return int(binascii.hexlify(oversized), 16) % L
+# unused, in favor of common HKDF approach in groups.py
+#def password_to_scalar(pw):
+#    oversized = hashlib.sha512(pw).digest()
+#    return int(binascii.hexlify(oversized), 16) % L
 
 def scalar_to_bytes(y):
     y = y % L
