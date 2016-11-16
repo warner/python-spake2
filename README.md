@@ -1,5 +1,5 @@
 
-# Pure-Python SPAKE2
+# SPAKE2
 
 * License: MIT
 * Dependencies: hkdf
