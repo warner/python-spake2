@@ -27,6 +27,17 @@ class SPAKE2(unittest.TestCase):
         m1A,m1B = sA.start(), sB.start()
         self.assertEqual(hexlify(m1A), b"416fc960df73c9cf8ed7198b0c9534e2e96a5984bfc5edc023fd24dacf371f2af9")
         self.assertEqual(hexlify(m1B), b"42354e97b88406922b1df4bea1d7870f17aed3dba7c720b313edae315b00959309")
+        # peek at the scalars, since it ought to be stable, and other
+        # implementations that want to use this as a test vector might start
+        # with the scalar, rather than duplicating our deterministic RNG
+        self.assertEqual(sA.pw_scalar,
+                         3515301705789368674385125653994241092664323519848410154015274772661223168839)
+        self.assertEqual(sB.pw_scalar,
+                         3515301705789368674385125653994241092664323519848410154015274772661223168839)
+        self.assertEqual(sA.xy_scalar,
+                         2611694063369306139794446498317402240796898290761098242657700742213257926693L)
+        self.assertEqual(sB.xy_scalar,
+                         7002393159576182977806091886122272758628412261510164356026361256515836884383)
 
         kA,kB = sA.finish(m1B), sB.finish(m1A)
         self.assertEqual(hexlify(kA),
