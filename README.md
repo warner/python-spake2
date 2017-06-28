@@ -273,15 +273,16 @@ To override the default parameters, include a `params=` value when you create
 the SPAKE2 instance. Both sides must use the same parameters.
 
 ```python
-from spake2 import SPAKE2_A, params
-s = SPAKE2_A(b"password", params=params.Params3072)
+from spake2 import SPAKE2_A
+from spake2.parameters.i3072 import Params3072
+s = SPAKE2_A(b"password", params=Params3072)
 ```
 
 Note that if you serialize an instance with non-default `params=`, you must
 restore it with the same parameters, otherwise you will get an exception:
 
 ```python
-s = SPAKE2_A.from_serialized(data, params=params.Params3072)
+s = SPAKE2_A.from_serialized(data, params=Params3072)
 ```
 
 This library is very much *not* constant-time, and does not protect against
