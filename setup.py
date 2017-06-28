@@ -38,7 +38,7 @@ class Speed(Command):
 
         for params in ["ParamsEd25519",
                        "Params1024", "Params2048", "Params3072"]:
-            S1 = "from spake2 import SPAKE2_A, SPAKE2_B, %s" % params
+            S1 = "from spake2 import SPAKE2_A, SPAKE2_B; from spake2.parameters.all import %s" % params
             S2 = "sB = SPAKE2_B(b'password', params=%s)" % params
             S3 = "mB = sB.start()"
             S4 = "sA = SPAKE2_A(b'password', params=%s)" % params
@@ -48,7 +48,7 @@ class Speed(Command):
             full = do([S1, S2, S3], ";".join([S4, S5, S8]))
             start = do([S1], ";".join([S4, S5]))
             # how large is the generated message?
-            from spake2 import params as all_params
+            from spake2.parameters import all as all_params
             from spake2 import SPAKE2_A
             p = getattr(all_params, params)
             s = SPAKE2_A(b"pw", params=p)
