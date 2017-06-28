@@ -1,14 +1,18 @@
 import unittest
 from binascii import hexlify
 from hashlib import sha256
-from spake2 import groups, params, ed25519_group
+from spake2 import groups, ed25519_group
+from spake2.parameters.i1024 import Params1024
+from spake2.parameters.i2048 import Params2048
+from spake2.parameters.i3072 import Params3072
+from spake2.parameters.ed25519 import ParamsEd25519
 from spake2.spake2 import SPAKE2_A, SPAKE2_B
 from .common import PRG
 
 ALL_INTEGER_GROUPS = [groups.I1024, groups.I2048, groups.I3072]
 ALL_GROUPS = ALL_INTEGER_GROUPS + [ed25519_group.Ed25519Group]
-ALL_INTEGER_PARAMS = [params.Params1024, params.Params2048, params.Params3072]
-ALL_PARAMS = ALL_INTEGER_PARAMS + [params.ParamsEd25519]
+ALL_INTEGER_PARAMS = [Params1024, Params2048, Params3072]
+ALL_PARAMS = ALL_INTEGER_PARAMS + [ParamsEd25519]
 
 def random_element(g, entropy_f):
     s = g.random_scalar(entropy_f)
@@ -158,7 +162,7 @@ class Parameters(unittest.TestCase):
 
     def test_default_is_ed25519(self):
         pw = b"password"
-        sA,sB = SPAKE2_A(pw, params=params.ParamsEd25519), SPAKE2_B(pw)
+        sA,sB = SPAKE2_A(pw, params=ParamsEd25519), SPAKE2_B(pw)
         m1A,m1B = sA.start(), sB.start()
         kA,kB = sA.finish(m1B), sB.finish(m1A)
         self.assertEqual(hexlify(kA), hexlify(kB))

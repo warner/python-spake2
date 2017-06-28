@@ -1,7 +1,8 @@
 import os, json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
-from .params import Params, ParamsEd25519
+from .params import _Params
+from .parameters.ed25519 import ParamsEd25519
 
 DefaultParams = ParamsEd25519
 
@@ -69,7 +70,7 @@ class _SPAKE2_Base:
         self.pw = password
         self.pw_scalar = params.group.password_to_scalar(password)
 
-        assert isinstance(params, Params), repr(params)
+        assert isinstance(params, _Params), repr(params)
         self.params = params
         self.entropy_f = entropy_f
 

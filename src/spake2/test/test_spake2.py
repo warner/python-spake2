@@ -1,6 +1,8 @@
 
 import unittest
-from spake2 import spake2, params
+from spake2 import spake2
+from spake2.parameters.i1024 import Params1024
+from spake2.parameters.i3072 import Params3072
 from spake2.spake2 import SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric
 from binascii import hexlify
 from hashlib import sha256
@@ -172,32 +174,32 @@ class Errors(unittest.TestCase):
 
 
     def test_unserialize_wrong(self):
-        s = SPAKE2_A(b"password", params=params.Params1024)
+        s = SPAKE2_A(b"password", params=Params1024)
         s.start()
         data = s.serialize()
-        SPAKE2_A.from_serialized(data, params=params.Params1024) # this is ok
+        SPAKE2_A.from_serialized(data, params=Params1024) # this is ok
         self.assertRaises(spake2.WrongGroupError,
                           SPAKE2_A.from_serialized, data) # default is P2048
         self.assertRaises(spake2.WrongGroupError,
                           SPAKE2_A.from_serialized, data,
-                          params=params.Params3072)
+                          params=Params3072)
         self.assertRaises(spake2.WrongSideSerialized,
                           SPAKE2_B.from_serialized, data,
-                          params=params.Params1024)
+                          params=Params1024)
 
-        ss = SPAKE2_Symmetric(b"password", params=params.Params1024)
+        ss = SPAKE2_Symmetric(b"password", params=Params1024)
         ss.start()
         sdata = ss.serialize()
 
-        SPAKE2_Symmetric.from_serialized(sdata, params=params.Params1024) # ok
+        SPAKE2_Symmetric.from_serialized(sdata, params=Params1024) # ok
         self.assertRaises(spake2.WrongGroupError, # default is P2048
                           SPAKE2_Symmetric.from_serialized, sdata)
         self.assertRaises(spake2.WrongGroupError,
                           SPAKE2_Symmetric.from_serialized, sdata,
-                          params=params.Params3072)
+                          params=Params3072)
         self.assertRaises(spake2.WrongSideSerialized,
                           SPAKE2_Symmetric.from_serialized, data, # from A
-                          params=params.Params1024)
+                          params=Params1024)
 
 if __name__ == '__main__':
     unittest.main()
