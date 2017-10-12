@@ -168,6 +168,37 @@ class Symmetric(unittest.TestCase):
         # reflect Alice's message back to her
         self.assertRaises(spake2.ReflectionThwarted, s1.finish, m1)
 
+    def test_thread_safety(self):
+        pw = b"password"
+
+        def _finish_key(s1, m2_task):
+            m2 = m2_task.get()
+            return s1.finish(m2)
+
+        def _assert_equality(sA, sB, k1_task, k2_task):
+            k1 = k1_task.get()
+            k2 = k2_task.get()
+            self.assertEqual(hexlify(k1), hexlify(k2))
+            self.assertEqual(len(k1), len(sha256().digest()))
+
+        tasks = []
+        pool = ThreadPool(4)
+        try:
+            for i in range(32):
+                s1, s2 = SPAKE2_Symmetric(pw), SPAKE2_Symmetric(pw)
+                m1_task = pool.apply_async(s1.start)
+                m2_task = pool.apply_async(s2.start)
+                k1_task = pool.apply_async(_finish_key, (s1, m2_task))
+                k2_task = pool.apply_async(_finish_key, (s2, m1_task))
+                equality_task = pool.apply_async(_assert_equality,
+                                                 (s1, s2, k1_task, k2_task))
+                tasks.append(equality_task)
+            for task in tasks:
+                task.get()
+        finally:
+            pool.terminate()
+
+
 class Errors(unittest.TestCase):
     def test_start_twice(self):
         s = SPAKE2_A(b"password")
