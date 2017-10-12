@@ -1,6 +1,7 @@
 import os, json
 from binascii import hexlify, unhexlify
 from hashlib import sha256
+from threading import Lock
 from .params import _Params
 from .parameters.ed25519 import ParamsEd25519
 
@@ -66,6 +67,7 @@ class _SPAKE2_Base:
 
     def __init__(self, password,
                  params=DefaultParams, entropy_f=os.urandom):
+        self._lock = Lock()
         assert isinstance(password, bytes)
         self.pw = password
         self.pw_scalar = params.group.password_to_scalar(password)
@@ -78,19 +80,20 @@ class _SPAKE2_Base:
         self._finished = False
 
     def start(self):
-        if self._started:
-            raise OnlyCallStartOnce("start() can only be called once")
-        self._started = True
+        with self._lock:
+            if self._started:
+                raise OnlyCallStartOnce("start() can only be called once")
+            self._started = True
 
-        g = self.params.group
-        self.xy_scalar = g.random_scalar(self.entropy_f)
-        self.xy_elem = g.Base.scalarmult(self.xy_scalar)
-        self.compute_outbound_message()
-        # Guard against both sides using the same side= by adding a side byte
-        # to the message. This is not included in the transcript hash at the
-        # end.
-        outbound_side_and_message = self.side + self.outbound_message
-        return outbound_side_and_message
+            g = self.params.group
+            self.xy_scalar = g.random_scalar(self.entropy_f)
+            self.xy_elem = g.Base.scalarmult(self.xy_scalar)
+            self.compute_outbound_message()
+            # Guard against both sides using the same side= by adding a side byte
+            # to the message. This is not included in the transcript hash at the
+            # end.
+            outbound_side_and_message = self.side + self.outbound_message
+            return outbound_side_and_message
 
     def compute_outbound_message(self):
         #message_elem = self.xy_elem + (self.my_blinding() * self.pw_scalar)
@@ -99,23 +102,24 @@ class _SPAKE2_Base:
         self.outbound_message = message_elem.to_bytes()
 
     def finish(self, inbound_side_and_message):
-        if self._finished:
-            raise OnlyCallFinishOnce("finish() can only be called once")
-        self._finished = True
+        with self._lock:
+            if self._finished:
+                raise OnlyCallFinishOnce("finish() can only be called once")
+            self._finished = True
 
-        self.inbound_message = self._extract_message(inbound_side_and_message)
+            self.inbound_message = self._extract_message(inbound_side_and_message)
 
-        g = self.params.group
-        inbound_elem = g.bytes_to_element(self.inbound_message)
-        if inbound_elem.to_bytes() == self.outbound_message:
-            raise ReflectionThwarted
-        #K_elem = (inbound_elem + (self.my_unblinding() * -self.pw_scalar)
-        #          ) * self.xy_scalar
-        pw_unblinding = self.my_unblinding().scalarmult(-self.pw_scalar)
-        K_elem = inbound_elem.add(pw_unblinding).scalarmult(self.xy_scalar)
-        K_bytes = K_elem.to_bytes()
-        key = self._finalize(K_bytes)
-        return key
+            g = self.params.group
+            inbound_elem = g.bytes_to_element(self.inbound_message)
+            if inbound_elem.to_bytes() == self.outbound_message:
+                raise ReflectionThwarted
+            #K_elem = (inbound_elem + (self.my_unblinding() * -self.pw_scalar)
+            #          ) * self.xy_scalar
+            pw_unblinding = self.my_unblinding().scalarmult(-self.pw_scalar)
+            K_elem = inbound_elem.add(pw_unblinding).scalarmult(self.xy_scalar)
+            K_bytes = K_elem.to_bytes()
+            key = self._finalize(K_bytes)
+            return key
 
 
     def hash_params(self):
