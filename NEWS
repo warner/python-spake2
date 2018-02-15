@@ -1,6 +1,26 @@
 
 User-Visible Changes in python-spake2
 
+* Release 0.8 (14-Feb-2018)
+
+API BREAK (but not a compatibility break)
+
+Applications using this release will start up faster. The library includes
+multiple groups (with different message sizes, performance, and security
+levels), and each group uses a different blinding factor. These factors take
+a relatively long time to compute. The previous release did this computation
+for all groups, even ones that the application never imported. This release
+changes the import API to avoid the unnecessary calculations, which saves
+about 400ms at import time on my 2016-era laptop (and several seconds on a
+Raspberry Pi).
+
+Applications must use different "import" statements when upgrading to this
+release ("from spake2.parameters.ed25519 import ParamsEd25519" instead of
+"from spake2 import ParamsEd25519"). However this release retains message
+compatibility with spake2-0.7: apps using 0.8 can interoperate with apps
+using 0.7 without problems.
+
+
 * Release 0.7 (12-May-2016)
 
 COMPATIBILITY BREAK
