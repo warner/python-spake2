@@ -1,1 +1,1 @@
-spake2/_version.py export-subst
+src/spake2/_version.py export-subst
