@@ -1,5 +1,6 @@
 
 import unittest
+from multiprocessing.dummy import Pool as ThreadPool
 from spake2 import spake2
 from spake2.parameters.i1024 import Params1024
 from spake2.parameters.i3072 import Params3072
@@ -57,6 +58,36 @@ class Basic(unittest.TestCase):
         m1 = s1.start()
         reflected = b"B" + m1[1:]
         self.assertRaises(spake2.ReflectionThwarted, s1.finish, reflected)
+
+    def test_thread_safety(self):
+        pw = b"password"
+
+        def _finish_key(sA, m1B_task):
+            m1B = m1B_task.get()
+            return sA.finish(m1B)
+
+        def _assert_equality(sA, sB, kA_task, kB_task):
+            kA = kA_task.get()
+            kB = kB_task.get()
+            self.assertEqual(hexlify(kA), hexlify(kB))
+            self.assertEqual(len(kA), len(sha256().digest()))
+
+        tasks = []
+        pool = ThreadPool(4)
+        try:
+            for i in range(32):
+                sA, sB = SPAKE2_A(pw), SPAKE2_B(pw)
+                m1A_task = pool.apply_async(sA.start)
+                m1B_task = pool.apply_async(sB.start)
+                kA_task = pool.apply_async(_finish_key, (sA, m1B_task))
+                kB_task = pool.apply_async(_finish_key, (sB, m1A_task))
+                equality_task = pool.apply_async(_assert_equality,
+                                                 (sA, sB, kA_task, kB_task))
+                tasks.append(equality_task)
+            for task in tasks:
+                task.get()
+        finally:
+            pool.terminate()
 
 
 class OtherEntropy(unittest.TestCase):
@@ -136,6 +167,37 @@ class Symmetric(unittest.TestCase):
         m1 = s1.start()
         # reflect Alice's message back to her
         self.assertRaises(spake2.ReflectionThwarted, s1.finish, m1)
+
+    def test_thread_safety(self):
+        pw = b"password"
+
+        def _finish_key(s1, m2_task):
+            m2 = m2_task.get()
+            return s1.finish(m2)
+
+        def _assert_equality(sA, sB, k1_task, k2_task):
+            k1 = k1_task.get()
+            k2 = k2_task.get()
+            self.assertEqual(hexlify(k1), hexlify(k2))
+            self.assertEqual(len(k1), len(sha256().digest()))
+
+        tasks = []
+        pool = ThreadPool(4)
+        try:
+            for i in range(32):
+                s1, s2 = SPAKE2_Symmetric(pw), SPAKE2_Symmetric(pw)
+                m1_task = pool.apply_async(s1.start)
+                m2_task = pool.apply_async(s2.start)
+                k1_task = pool.apply_async(_finish_key, (s1, m2_task))
+                k2_task = pool.apply_async(_finish_key, (s2, m1_task))
+                equality_task = pool.apply_async(_assert_equality,
+                                                 (s1, s2, k1_task, k2_task))
+                tasks.append(equality_task)
+            for task in tasks:
+                task.get()
+        finally:
+            pool.terminate()
+
 
 class Errors(unittest.TestCase):
     def test_start_twice(self):
