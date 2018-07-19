@@ -25,6 +25,8 @@ class WrongGroupError(SPAKEError):
     pass
 class ReflectionThwarted(SPAKEError):
     """Someone tried to reflect our message back to us."""
+class KeyDegradationThwarted(SPAKEError):
+    """Someone tried to degrade our key material."""
 
 SideA = b"A"
 SideB = b"B"
@@ -113,6 +115,8 @@ class _SPAKE2_Base:
         #          ) * self.xy_scalar
         pw_unblinding = self.my_unblinding().scalarmult(-self.pw_scalar)
         K_elem = inbound_elem.add(pw_unblinding).scalarmult(self.xy_scalar)
+        if K_elem is g.Zero:
+            raise KeyDegradationThwarted
         K_bytes = K_elem.to_bytes()
         key = self._finalize(K_bytes)
         return key
