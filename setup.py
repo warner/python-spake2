@@ -79,5 +79,5 @@ setup(name="spake2",
           "Programming Language :: Python :: 3.6",
           "Topic :: Security :: Cryptography",
           ],
-      install_requires=["hkdf"],
+      install_requires=["cryptography"],
       )
