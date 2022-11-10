@@ -1,7 +1,8 @@
 import unittest
 from binascii import hexlify, unhexlify
 from hashlib import sha256
-from hkdf import Hkdf
+from cryptography.hazmat.primitives.kdf import hkdf
+from cryptography.hazmat.primitives import hashes
 from .myhkdf import HKDF as myHKDF
 from spake2 import groups, ed25519_group
 from spake2.spake2 import (SPAKE2_A, SPAKE2_B, SPAKE2_Symmetric,
@@ -213,14 +214,14 @@ HKDF_TEST_VECTORS += [
     {"salt": "00", "IKM": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "info": "", "L": 4, "OKM": "37ad2910"},
     ]
 
-class HKDF(unittest.TestCase):
+class TestHKDF(unittest.TestCase):
     def test_vectors(self):
         for vector in HKDF_TEST_VECTORS:
             salt = unhexlify(vector["salt"].encode("ascii"))
             IKM = unhexlify(vector["IKM"].encode("ascii"))
             info = unhexlify(vector["info"].encode("ascii"))
-            h = Hkdf(salt=salt, input_key_material=IKM, hash=sha256)
-            digest = h.expand(info, vector["L"])
+            h = hkdf.HKDF(algorithm=hashes.SHA256(), length=vector["L"], salt=salt, info=info)
+            digest = h.derive(IKM)
             self.assertEqual(digest, myHKDF(IKM, vector["L"], salt, info))
             #print(hexlify(digest))
             expected = vector["OKM"].encode("ascii")

@@ -1,6 +1,7 @@
 from __future__ import division
 import hashlib
-from hkdf import Hkdf
+from cryptography.hazmat.primitives.kdf import hkdf
+from cryptography.hazmat.primitives import hashes
 from .six import integer_types
 from .util import (size_bits, size_bytes, unbiased_randrange,
                    bytes_to_number, number_to_bytes)
@@ -63,9 +64,12 @@ use os.urandom is for deterministic unit tests.
 
 
 def expand_password(data, num_bytes):
-    h = Hkdf(salt=b"", input_key_material=data, hash=hashlib.sha256)
-    info = b"SPAKE2 pw"
-    return h.expand(info, num_bytes)
+    return hkdf.HKDF(
+        algorithm=hashes.SHA256(),
+        length=num_bytes,
+        salt=b"",
+        info=b"SPAKE2 pw"
+    ).derive(data)
 
 def password_to_scalar(pw, scalar_size_bytes, q):
     assert isinstance(pw, bytes)
@@ -77,9 +81,12 @@ def password_to_scalar(pw, scalar_size_bytes, q):
     return i % q
 
 def expand_arbitrary_element_seed(data, num_bytes):
-    h = Hkdf(salt=b"", input_key_material=data, hash=hashlib.sha256)
-    info = b"SPAKE2 arbitrary element"
-    return h.expand(info, num_bytes)
+    return hkdf.HKDF(
+        algorithm=hashes.SHA256(),
+        length=num_bytes,
+        salt=b"",
+        info=b"SPAKE2 arbitrary element"
+    ).derive(data)
 
 class _Element:
     def __init__(self, group, e):
