@@ -273,7 +273,7 @@ def arbitrary_element(seed): # unknown DL
     # oversized string (128 bits more than the field size), then reducing
     # down to Q. But it's comforting, and it's the same technique we use for
     # converting passwords/seeds to scalars (which *does* need uniformity).
-    hseed = expand_arbitrary_element_seed(seed, (256/8)+16)
+    hseed = expand_arbitrary_element_seed(seed, int((256/8)+16))
     y = int(binascii.hexlify(hseed), 16) % Q
 
     # we try successive Y values until we find a valid point
