@@ -11,16 +11,14 @@ environment:
   matrix:
     # For Python versions available on Appveyor, see
     # http://www.appveyor.com/docs/installed-software#python
-    - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python27-x64"
-      DISTUTILS_USE_SDK: "1"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python34-x64"
-      DISTUTILS_USE_SDK: "1"
-    - PYTHON: "C:\\Python35"
-    - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python36-x64"
+    - PYTHON: "C:\\Python39"
+    - PYTHON: "C:\\Python39-x64"
+    - PYTHON: "C:\\Python311"
+    - PYTHON: "C:\\Python311-x64"
+    - PYTHON: "C:\\Python312"
+    - PYTHON: "C:\\Python312-x64"
 
 install:
   - |
