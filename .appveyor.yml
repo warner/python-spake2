@@ -1,30 +1,32 @@
 # adapted from https://packaging.python.org/en/latest/appveyor/
 
+image:
+  - Visual Studio 2019
+
+# support status of various Python releases
+# https://devguide.python.org/versions/
 
 environment:
-  # we tell Tox to use "twisted[windows]", to get pypiwin32 installed
-  #TWISTED_EXTRAS: "[windows]"
-  # that didn't work (it seems to work when I run it locally, but on appveyor
-  # it fails to install the pypiwin32 package). So don't bother telling
-  # Twisted to support windows: just install it ourselves.
-  # EXTRA_DEPENDENCY: "pypiwin32"
   matrix:
     # For Python versions available on Appveyor, see
-    # http://www.appveyor.com/docs/installed-software#python
-    - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python27-x64"
-      DISTUTILS_USE_SDK: "1"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python34-x64"
-      DISTUTILS_USE_SDK: "1"
-    - PYTHON: "C:\\Python35"
-    - PYTHON: "C:\\Python35-x64"
-    - PYTHON: "C:\\Python36"
-    - PYTHON: "C:\\Python36-x64"
+    # https://www.appveyor.com/docs/windows-images-software/#python
+   - PYTHON: "C:\\Python39"
+     TOXENV: py39
+   - PYTHON: "C:\\Python39-x64"
+     TOXENV: py39
+   - PYTHON: "C:\\Python311"
+     TOXENV: py311
+   - PYTHON: "C:\\Python311-x64"
+     TOXENV: py311
+   - PYTHON: "C:\\Python312"
+     TOXENV: py312
+   - PYTHON: "C:\\Python312-x64"
+     TOXENV: py312
 
 install:
   - |
-    %PYTHON%\python.exe -m pip install wheel tox
+    %PYTHON%\python.exe --version
+    %PYTHON%\python.exe -m pip install tox
 
 # note:
 # %PYTHON% has: python.exe
@@ -34,12 +36,8 @@ install:
 build: off
 
 test_script:
-  # Put your test command here.
-  # Note that you must use the environment variable %PYTHON% to refer to
-  # the interpreter you're using - Appveyor does not do anything special
-  # to put the Python evrsion you want to use on PATH.
   - |
-    misc\windows-build.cmd %PYTHON%\Scripts\tox.exe -e py
+    %PYTHON%\python.exe -m tox
 
 after_test:
   # This step builds your wheels.
@@ -47,13 +45,9 @@ after_test:
   # 64-bit Python 3.3/3.4. And you need to use %PYTHON% to get the correct
   # interpreter
   - |
-    misc\windows-build.cmd %PYTHON%\python.exe setup.py bdist_wheel
+    %PYTHON%\python.exe -m pip install setuptools wheel
+    %PYTHON%\python.exe setup.py bdist_wheel
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
   - path: dist\*
-
-#on_success:
-#  You can use this step to upload your artifacts to a public website.
-#  See Appveyor's documentation for more details. Or you can simply
-#  access your wheels from the Appveyor "artifacts" tab for your build.
