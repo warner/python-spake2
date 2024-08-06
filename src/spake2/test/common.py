@@ -1,4 +1,3 @@
-from spake2 import six
 from hashlib import sha256
 from itertools import count
 
@@ -9,7 +8,7 @@ class PRG:
         self.generator = self.block_generator(seed)
 
     def __call__(self, numbytes):
-        return b"".join([six.next(self.generator) for i in range(numbytes)])
+        return b"".join([next(self.generator) for i in range(numbytes)])
 
     def block_generator(self, seed):
         assert isinstance(seed, type(b""))
