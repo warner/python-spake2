@@ -1,8 +1,6 @@
-from __future__ import division
 import hashlib
 from cryptography.hazmat.primitives.kdf import hkdf
 from cryptography.hazmat.primitives import hashes
-from .six import integer_types
 from .util import (size_bits, size_bytes, unbiased_randrange,
                    bytes_to_number, number_to_bytes)
 
@@ -128,7 +126,7 @@ class IntegerGroup:
     def scalar_to_bytes(self, i):
         # both for hashing into transcript, and save/restore of
         # intermediate state
-        assert isinstance(i, integer_types)
+        assert isinstance(i, int)
         assert 0 <= 0 < self.q
         return number_to_bytes(i, self.q)
 
@@ -195,7 +193,7 @@ class IntegerGroup:
         if not isinstance(e1, _Element):
             raise TypeError("E*N requires E be an element")
         assert e1._group is self
-        if not isinstance(i, integer_types):
+        if not isinstance(i, int):
             raise TypeError("E*N requires N be a scalar")
         return _Element(self, pow(e1._e, i % self.q, self.p))
 
