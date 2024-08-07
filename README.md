@@ -2,7 +2,7 @@
 # Pure-Python SPAKE2
 
 * License: MIT
-* Dependencies: hkdf
+* Dependencies: "cryptography" (for hkdf)
 * Compatible With: Python 3.9, 3.10, 3.11, 3.12, PyPy3
 * [![Build Status](https://travis-ci.org/warner/python-spake2.png?branch=master)](https://travis-ci.org/warner/python-spake2) [![Windows Build Status](https://ci.appveyor.com/api/projects/status/j2q57qee3xwbqp5l/branch/master?svg=true)](https://ci.appveyor.com/project/warner/python-spake2) [![Coverage Status](https://coveralls.io/repos/warner/python-spake2/badge.svg)](https://coveralls.io/r/warner/python-spake2)
 
