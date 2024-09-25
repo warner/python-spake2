@@ -3,8 +3,18 @@ User-Visible Changes in python-spake2
 
 * Upcoming Release
 
-python-spake2 now depends on the "cryptography" library instead of
-"hkdf" for key-derivation.
+(Put notes about merged features here).
+
+
+* Release 0.9 (24-Sep-2024)
+
+This release mainly deals with packaging simplifications: two dependencies ("six" and "hkdf") are removed.
+The "cryptography" library takes the place of "hkdf" for key derivation.
+
+There is no longer a vendored version of "six" (nor internal use of it, thanks a-dieste).
+
+The "versioneer" library is updated to 0.29.
+
 
 * Release 0.8 (14-Feb-2018)
 
