@@ -58,6 +58,15 @@ class Basic(unittest.TestCase):
         reflected = b"B" + m1[1:]
         self.assertRaises(spake2.ReflectionThwarted, s1.finish, reflected)
 
+    def test_keydegradation(self):
+        pw = b"password"
+        s1 = SPAKE2_A(pw)
+        m1 = s1.start()
+        pw_scalar = s1.params.group.password_to_scalar(pw)
+        pw_blinding = s1.params.N.scalarmult(pw_scalar)
+        manipulatedmsg = b"B" + pw_blinding.to_bytes()
+        self.assertRaises(spake2.KeyDegradationThwarted, s1.finish, manipulatedmsg)
+
 
 class OtherEntropy(unittest.TestCase):
     def test_entropy(self):
